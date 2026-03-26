@@ -308,461 +308,541 @@ const PLANS = [
 ];
 
 // ============ TOAST ============
+
+// ============================================================
+// ZEESPARES VMS v6 — Real Auth + Razorpay + Google Drive
+// ============================================================
+
+const RAZORPAY_KEY   = 'rzp_live_SVpyhNZtOJBGLG';
+const GOOGLE_CLIENT_ID = '801291352828-vsbfrr91qr8pqo03b24slag2tchdf29k.apps.googleusercontent.com';
+const GOOGLE_SCOPES    = 'https://www.googleapis.com/auth/drive.file https://www.googleapis.com/auth/userinfo.email';
+const ADMIN_EMAIL      = 'dskart9953@gmail.com'; // change to your admin email
+
+// ── Local DB helpers (localStorage as simple user store) ──
+const DB = {
+  getUsers: () => JSON.parse(localStorage.getItem('vms_users') || '{}'),
+  saveUsers: (u) => localStorage.setItem('vms_users', JSON.stringify(u)),
+  getSession: () => JSON.parse(localStorage.getItem('vms_session') || 'null'),
+  saveSession: (s) => localStorage.setItem('vms_session', JSON.stringify(s)),
+  clearSession: () => localStorage.removeItem('vms_session'),
+  getVideos: (email) => JSON.parse(localStorage.getItem(`vms_videos_${email}`) || '[]'),
+  saveVideos: (email, v) => localStorage.setItem(`vms_videos_${email}`, JSON.stringify(v)),
+};
+
+// ── Plan config ──────────────────────────────────────────────
+const PLANS_CONFIG = [
+  {
+    id: 'trial',
+    name: 'Free Trial',
+    price: 0,
+    currency: '₹',
+    period: '7 days',
+    desc: 'Try all features free for 7 days',
+    color: '#5a8a7c',
+    trialDays: 7,
+    videoLimit: 100,
+    features: [
+      '✓ 100 videos during trial',
+      '✓ Local folder save',
+      '✓ Auto scan workflow',
+      '✓ Timestamp overlay',
+      '✗ Google Drive sync',
+      '✗ Cloud storage',
+      '✗ Priority support',
+    ]
+  },
+  {
+    id: 'pro',
+    name: 'Pro',
+    price: 999,
+    currency: '₹',
+    period: '/mo',
+    desc: 'Best for active sellers',
+    color: '#0A8A61',
+    popular: true,
+    videoLimit: 500,
+    features: [
+      '✓ 500 videos/month',
+      '✓ Local folder save',
+      '✓ Google Drive sync',
+      '✓ Auto scan workflow',
+      '✓ Timestamp + Order ID overlay',
+      '✓ Email support',
+      '✗ Cloud storage',
+    ]
+  },
+  {
+    id: 'business',
+    name: 'Business',
+    price: 2499,
+    currency: '₹',
+    period: '/mo',
+    desc: 'For high-volume sellers & teams',
+    color: '#ffa502',
+    videoLimit: 99999,
+    features: [
+      '✓ Unlimited videos',
+      '✓ Local + Google Drive + Cloud',
+      '✓ Multi-user access (3 seats)',
+      '✓ Advanced analytics',
+      '✓ Dispute report export (PDF)',
+      '✓ Priority WhatsApp support',
+      '✓ 10GB cloud storage included',
+    ]
+  }
+];
+
+// ── Mock recent videos for new accounts ─────────────────────
+const EMPTY_STATS = { total:0, thisMonth:0, disputes:0, storageGB:0 };
+
+// ============================================================
+// TOAST
+// ============================================================
 function Toast({ msg, type, onClose }) {
-  useEffect(() => { const t = setTimeout(onClose, 3200); return () => clearTimeout(t); }, []);
-  const icon = type==='success'?'✓':type==='error'?'✗':'ℹ';
-  const color = type==='success'?'var(--green-light)':type==='error'?'var(--red)':'var(--blue)';
+  useEffect(() => { const t = setTimeout(onClose, 3500); return () => clearTimeout(t); }, []);
+  const cfg = { success:{bg:'var(--surface2)',border:'rgba(10,138,97,0.5)',icon:'✓',col:'var(--green-light)'},
+                error:{bg:'rgba(30,10,10,0.95)',border:'rgba(255,71,87,0.5)',icon:'✗',col:'var(--red)'},
+                info:{bg:'var(--surface2)',border:'rgba(30,144,255,0.4)',icon:'ℹ',col:'var(--blue)'} }[type]||{};
   return (
-    <div className="toast">
-      <span style={{color,fontSize:18,fontWeight:800}}>{icon}</span>
+    <div style={{position:'fixed',bottom:24,right:24,background:cfg.bg,border:`1px solid ${cfg.border}`,
+      borderRadius:12,padding:'14px 18px',display:'flex',alignItems:'center',gap:10,
+      fontSize:13.5,fontWeight:500,boxShadow:'0 16px 40px rgba(0,0,0,0.5)',zIndex:9999,
+      maxWidth:340,animation:'slideIn .3s ease'}}>
+      <span style={{color:cfg.col,fontSize:18,fontWeight:800,flexShrink:0}}>{cfg.icon}</span>
       <span>{msg}</span>
     </div>
   );
 }
 
-// ============ AUTH ============
+// ============================================================
+// AUTH PAGE — Real signup/login with localStorage
+// ============================================================
 function AuthPage({ onLogin }) {
-  const [mode, setMode] = useState('login');
-  const [form, setForm] = useState({ name:'', email:'', password:'', role:'seller' });
+  const [mode,  setMode]  = useState('login');
+  const [form,  setForm]  = useState({ name:'', email:'', password:'', confirmPassword:'' });
   const [error, setError] = useState('');
+  const [loading, setLoading] = useState(false);
+
+  const validate = () => {
+    if (!form.email.trim()) return 'Email is required';
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email)) return 'Enter a valid email address';
+    if (!form.password) return 'Password is required';
+    if (form.password.length < 6) return 'Password must be at least 6 characters';
+    if (mode === 'signup') {
+      if (!form.name.trim()) return 'Full name is required';
+      if (form.password !== form.confirmPassword) return 'Passwords do not match';
+    }
+    return null;
+  };
 
   const handle = () => {
-    if (!form.email || !form.password) { setError('Please fill all fields'); return; }
-    if (mode==='signup' && !form.name) { setError('Name is required'); return; }
-    onLogin({ name: form.name || form.email.split('@')[0], email: form.email, role: form.role, plan:'pro' });
+    const err = validate();
+    if (err) { setError(err); return; }
+    setLoading(true); setError('');
+
+    const users = DB.getUsers();
+
+    if (mode === 'signup') {
+      if (users[form.email]) { setError('This email is already registered. Please sign in.'); setLoading(false); return; }
+      const now = Date.now();
+      const newUser = {
+        name: form.name.trim(),
+        email: form.email.toLowerCase().trim(),
+        password: btoa(form.password), // basic encoding (not production-safe, needs backend for real)
+        role: form.email.toLowerCase() === ADMIN_EMAIL ? 'admin' : 'seller',
+        plan: 'trial',
+        trialStarted: now,
+        trialExpiry: now + (7 * 24 * 60 * 60 * 1000),
+        createdAt: now,
+        videoCount: 0,
+      };
+      users[form.email.toLowerCase()] = newUser;
+      DB.saveUsers(users);
+      DB.saveSession(newUser);
+      setTimeout(() => { setLoading(false); onLogin(newUser); }, 600);
+    } else {
+      const u = users[form.email.toLowerCase().trim()];
+      if (!u) { setError('No account found with this email. Please sign up first.'); setLoading(false); return; }
+      if (u.password !== btoa(form.password)) { setError('Incorrect password. Please try again.'); setLoading(false); return; }
+      DB.saveSession(u);
+      setTimeout(() => { setLoading(false); onLogin(u); }, 400);
+    }
   };
+
+  const f = (k,v) => { setForm(p=>({...p,[k]:v})); if(error) setError(''); };
 
   return (
     <div className="auth-wrap">
       <div className="auth-card">
         <div className="auth-logo">
           <div className="auth-logo-icon">📦</div>
-          <div>
-            <div className="auth-logo-text">Zeespares VMS</div>
-            <div className="auth-logo-sub">Video Management System</div>
-          </div>
+          <div><div className="auth-logo-text">Zeespares VMS</div><div className="auth-logo-sub">Video Management System</div></div>
         </div>
-        <div className="auth-title">{mode==='login'?'Welcome back':'Create account'}</div>
-        <div className="auth-sub">{mode==='login'?'Sign in to your seller dashboard':'Start protecting your orders today'}</div>
+        <div className="auth-title">{mode==='login'?'Welcome back':'Create your account'}</div>
+        <div className="auth-sub">{mode==='login'?'Sign in to your seller dashboard':'Start your 7-day free trial — no card required'}</div>
+
         {mode==='signup' && (
           <div className="form-group">
             <label className="form-label">Full Name</label>
-            <input className="form-input" placeholder="Your name" value={form.name} onChange={e=>setForm({...form,name:e.target.value})} />
+            <input className="form-input" placeholder="e.g. Rahul Sharma" value={form.name} onChange={e=>f('name',e.target.value)} />
           </div>
         )}
         <div className="form-group">
           <label className="form-label">Email Address</label>
-          <input className="form-input" type="email" placeholder="you@example.com" value={form.email} onChange={e=>setForm({...form,email:e.target.value})} />
+          <input className="form-input" type="email" placeholder="you@example.com" value={form.email} onChange={e=>f('email',e.target.value)}
+            onKeyDown={e=>e.key==='Enter'&&handle()} />
         </div>
         <div className="form-group">
           <label className="form-label">Password</label>
-          <input className="form-input" type="password" placeholder="••••••••" value={form.password} onChange={e=>setForm({...form,password:e.target.value})} />
+          <input className="form-input" type="password" placeholder="Minimum 6 characters" value={form.password} onChange={e=>f('password',e.target.value)}
+            onKeyDown={e=>e.key==='Enter'&&handle()} />
         </div>
         {mode==='signup' && (
           <div className="form-group">
-            <label className="form-label">Role</label>
-            <select className="form-input form-select" value={form.role} onChange={e=>setForm({...form,role:e.target.value})}>
-              <option value="seller">Seller</option>
-              <option value="admin">Admin</option>
-            </select>
+            <label className="form-label">Confirm Password</label>
+            <input className="form-input" type="password" placeholder="Re-enter password" value={form.confirmPassword} onChange={e=>f('confirmPassword',e.target.value)}
+              onKeyDown={e=>e.key==='Enter'&&handle()} />
           </div>
         )}
-        {error && <div style={{color:'var(--red)',fontSize:13,marginBottom:14,fontWeight:600}}>{error}</div>}
-        <button className="btn btn-primary" onClick={handle}>{mode==='login'?'Sign In →':'Create Account →'}</button>
+
+        {error && (
+          <div style={{background:'rgba(255,71,87,0.1)',border:'1px solid rgba(255,71,87,0.3)',borderRadius:9,
+            padding:'10px 14px',marginBottom:14,fontSize:13,color:'var(--red)',fontWeight:500}}>
+            ⚠️ {error}
+          </div>
+        )}
+
+        <button className="btn btn-primary" onClick={handle} disabled={loading} style={{opacity:loading?0.7:1}}>
+          {loading ? 'Please wait...' : mode==='login' ? 'Sign In →' : 'Start Free Trial →'}
+        </button>
+
+        {mode==='signup' && (
+          <div style={{marginTop:14,padding:'12px',background:'rgba(10,138,97,0.08)',borderRadius:9,border:'1px solid rgba(10,138,97,0.2)',fontSize:12,color:'var(--text2)'}}>
+            🎉 <strong style={{color:'var(--green-light)'}}>7 days free</strong> — 100 videos included. No credit card needed.
+          </div>
+        )}
+
         <div className="auth-switch">
-          {mode==='login' ? <>Don't have an account? <span className="auth-link" onClick={()=>setMode('signup')}>Sign up free</span></>
-            : <>Already have an account? <span className="auth-link" onClick={()=>setMode('login')}>Sign in</span></>}
+          {mode==='login'
+            ? <>Don't have an account? <span className="auth-link" onClick={()=>{setMode('signup');setError('');}}>Sign up free</span></>
+            : <>Already have an account? <span className="auth-link" onClick={()=>{setMode('login');setError('');}}>Sign in</span></>}
         </div>
-        {mode==='login' && (
-          <div style={{marginTop:16,padding:'12px 14px',background:'var(--bg3)',borderRadius:9,fontSize:12,color:'var(--text2)',textAlign:'center'}}>
-            🔐 Demo: any email + any password to login
-          </div>
-        )}
       </div>
     </div>
   );
 }
 
+// ============================================================
+// TRIAL BANNER
+// ============================================================
+function TrialBanner({ user, navigate }) {
+  if (user.plan !== 'trial') return null;
+  const daysLeft = Math.max(0, Math.ceil((user.trialExpiry - Date.now()) / (1000*60*60*24)));
+  const expired  = daysLeft === 0;
+  return (
+    <div style={{
+      background: expired ? 'rgba(255,71,87,0.1)' : 'rgba(255,165,2,0.08)',
+      border: `1px solid ${expired?'rgba(255,71,87,0.4)':'rgba(255,165,2,0.35)'}`,
+      borderRadius:10, padding:'10px 18px', marginBottom:16,
+      display:'flex', alignItems:'center', justifyContent:'space-between', gap:10, flexWrap:'wrap'
+    }}>
+      <div style={{display:'flex',alignItems:'center',gap:8}}>
+        <span style={{fontSize:16}}>{expired?'🔴':'⏳'}</span>
+        <span style={{fontSize:13,color:expired?'var(--red)':'var(--amber)',fontWeight:600}}>
+          {expired ? 'Your free trial has expired — upgrade to continue recording'
+            : `Free trial: ${daysLeft} day${daysLeft!==1?'s':''} remaining · ${Math.max(0,100-user.videoCount)} videos left`}
+        </span>
+      </div>
+      <button className="btn btn-primary btn-sm" style={{background:'var(--amber)',flexShrink:0}} onClick={()=>navigate('plans')}>
+        Upgrade Now →
+      </button>
+    </div>
+  );
+}
 
-// ============ CONFIG ============
-const RAZORPAY_KEY = 'rzp_live_SVpyhNZtOJBGLG';
-const GOOGLE_CLIENT_ID = '801291352828-vsbfrr91qr8pqo03b24slag2tchdf29k.apps.googleusercontent.com';
-const GOOGLE_SCOPES = 'https://www.googleapis.com/auth/drive.file';
-
-// ============ RECORDING PAGE ============
-function RecordingPage({ user, toast, driveToken, driveEmail }) {
+// ============================================================
+// RECORDING PAGE
+// ============================================================
+function RecordingPage({ user, toast, driveToken, driveEmail, onVideoSaved }) {
   const [orderId,     setOrderId]     = useState('');
   const [awb,         setAwb]         = useState('');
   const [phase,       setPhase]       = useState('idle');
   const [timer,       setTimer]       = useState(0);
   const [currentTime, setCurrentTime] = useState(new Date());
-  const [folderName,  setFolderName]  = useState(localStorage.getItem('vms_folder_name') || '');
+  const [folderName,  setFolderName]  = useState(localStorage.getItem('vms_folder_name')||'');
   const [lastSaved,   setLastSaved]   = useState('');
-  const [savedVideos, setSavedVideos] = useState(MOCK_VIDEOS.slice(0,4));
+  const [savedVideos, setSavedVideos] = useState(() => DB.getVideos(user.email).slice(0,10));
   const [camError,    setCamError]    = useState('');
-  const [uploadPct,   setUploadPct]   = useState(0);
 
   const videoRef        = useRef(null);
   const streamRef       = useRef(null);
   const recorderRef     = useRef(null);
   const chunksRef       = useRef([]);
   const timerRef        = useRef(null);
-  const clockRef        = useRef(null);
   const folderHandleRef = useRef(null);
   const orderRef        = useRef(null);
   const awbRef          = useRef(null);
 
-  // Restore folder handle name from localStorage
+  // Check if recording is allowed
+  const canRecord = () => {
+    if (user.plan === 'trial') {
+      if (Date.now() > user.trialExpiry) return { ok:false, reason:'Your free trial has expired. Please upgrade.' };
+      if (user.videoCount >= 100) return { ok:false, reason:'You have used all 100 trial videos. Please upgrade.' };
+    }
+    if (user.plan === 'pro' && user.videoCount >= 500) return { ok:false, reason:'Monthly limit of 500 videos reached.' };
+    return { ok: true };
+  };
+
   useEffect(() => {
-    clockRef.current = setInterval(() => setCurrentTime(new Date()), 1000);
+    const t = setInterval(() => setCurrentTime(new Date()), 1000);
     setTimeout(() => orderRef.current && orderRef.current.focus(), 200);
-    return () => clearInterval(clockRef.current);
+    return () => clearInterval(t);
   }, []);
 
   useEffect(() => {
-    if (phase === 'recording') {
-      timerRef.current = setInterval(() => setTimer(t => t + 1), 1000);
-    } else {
-      clearInterval(timerRef.current);
-    }
+    if (phase==='recording') timerRef.current = setInterval(()=>setTimer(t=>t+1),1000);
+    else clearInterval(timerRef.current);
     return () => clearInterval(timerRef.current);
   }, [phase]);
 
-  // Always attach stream via useEffect after render
   useEffect(() => {
     const el = videoRef.current;
     if (!el) return;
-    if (phase === 'recording' && streamRef.current) {
-      el.srcObject = streamRef.current;
-      el.play().catch(() => {});
-    } else if (phase === 'idle') {
-      el.srcObject = null;
-    }
+    if (phase==='recording' && streamRef.current) { el.srcObject=streamRef.current; el.play().catch(()=>{}); }
+    else if (phase==='idle') el.srcObject = null;
   }, [phase]);
 
   const selectFolder = async () => {
-    if (!window.showDirectoryPicker) { toast('Folder picker requires Chrome or Edge', 'error'); return; }
+    if (!window.showDirectoryPicker) { toast('Requires Chrome or Edge browser','error'); return; }
     try {
-      const handle = await window.showDirectoryPicker({ mode: 'readwrite' });
-      folderHandleRef.current = handle;
-      setFolderName(handle.name);
-      localStorage.setItem('vms_folder_name', handle.name);
-      toast(`Folder selected: "${handle.name}"`, 'success');
-    } catch(e) { if (e.name !== 'AbortError') toast('Folder selection cancelled', 'error'); }
+      const h = await window.showDirectoryPicker({mode:'readwrite'});
+      folderHandleRef.current=h; setFolderName(h.name);
+      localStorage.setItem('vms_folder_name', h.name);
+      toast(`Folder selected: "${h.name}"`, 'success');
+    } catch(e) { if(e.name!=='AbortError') toast('Cancelled','error'); }
   };
 
   const startRecording = async (oid) => {
+    const check = canRecord();
+    if (!check.ok) { toast(check.reason, 'error'); return; }
     setCamError('');
     let stream;
     try {
-      stream = await navigator.mediaDevices.getUserMedia({
-        video: { width: { ideal: 1280 }, height: { ideal: 720 } }, audio: true
-      });
+      stream = await navigator.mediaDevices.getUserMedia({video:{width:{ideal:1280},height:{ideal:720}},audio:true});
     } catch(e) {
-      setCamError('Camera access denied. Click the camera icon in your browser address bar and allow access, then try again.');
-      toast('Camera permission required', 'error'); return;
+      setCamError('Camera access denied. Click the camera icon in the browser address bar and allow access.');
+      toast('Camera permission required','error'); return;
     }
-    streamRef.current = stream;
-    chunksRef.current = [];
+    streamRef.current = stream; chunksRef.current = [];
     let mimeType = 'video/webm;codecs=vp8,opus';
-    if (!MediaRecorder.isTypeSupported(mimeType)) mimeType = 'video/webm';
-    if (!MediaRecorder.isTypeSupported(mimeType)) mimeType = '';
-    const recorder = new MediaRecorder(stream, mimeType ? { mimeType } : {});
-    recorder.ondataavailable = (e) => { if (e.data && e.data.size > 0) chunksRef.current.push(e.data); };
-    recorder.start(500);
-    recorderRef.current = recorder;
-    setTimer(0);
-    setPhase('recording');
-    toast(`Recording started: ${oid}`, 'success');
-    setTimeout(() => awbRef.current && awbRef.current.focus(), 300);
+    if(!MediaRecorder.isTypeSupported(mimeType)) mimeType='video/webm';
+    if(!MediaRecorder.isTypeSupported(mimeType)) mimeType='';
+    const rec = new MediaRecorder(stream, mimeType?{mimeType}:{});
+    rec.ondataavailable = e => { if(e.data&&e.data.size>0) chunksRef.current.push(e.data); };
+    rec.start(500); recorderRef.current=rec;
+    setTimer(0); setPhase('recording');
+    toast(`🔴 Recording: ${oid}`,'success');
+    setTimeout(()=>awbRef.current&&awbRef.current.focus(),300);
   };
 
   const stopAndSave = (awbVal) => {
-    const capturedOrderId = orderId;
-    const dur = fmt(timer);
+    const oid=orderId, dur=fmt(timer);
     setPhase('saving');
-    const recorder = recorderRef.current;
-    if (!recorder || recorder.state === 'inactive') { finalise(null, capturedOrderId, awbVal, dur); return; }
-    recorder.onstop = async () => {
-      const blob = new Blob(chunksRef.current, { type: 'video/webm' });
-      await finalise(blob, capturedOrderId, awbVal, dur);
-    };
-    recorder.stop();
-    if (streamRef.current) { streamRef.current.getTracks().forEach(t => t.stop()); streamRef.current = null; }
+    const rec=recorderRef.current;
+    if(!rec||rec.state==='inactive'){finalise(null,oid,awbVal,dur);return;}
+    rec.onstop = async()=>{ const blob=new Blob(chunksRef.current,{type:'video/webm'}); await finalise(blob,oid,awbVal,dur); };
+    rec.stop();
+    if(streamRef.current){streamRef.current.getTracks().forEach(t=>t.stop());streamRef.current=null;}
   };
 
-  const finalise = async (blob, oid, awbVal, dur) => {
-    const filename = `${oid}__${awbVal}__${new Date().toISOString().replace(/[:.]/g,'-')}.webm`;
-    let savedTo = 'none';
+  const finalise = async(blob,oid,awbVal,dur) => {
+    const ts = new Date().toISOString().replace(/[:.]/g,'-');
+    const filename = `${oid}__${awbVal}__${ts}.webm`;
+    let storage = 'none';
 
-    if (blob) {
-      // Priority: Google Drive > Local Folder > Browser Download
-      if (driveToken) {
-        try {
-          await uploadToDrive(blob, filename, driveToken);
-          savedTo = 'drive';
-          setLastSaved(filename);
-          toast(`Uploaded to Google Drive: ${filename}`, 'success');
-        } catch(e) {
-          toast('Google Drive upload failed, saving locally', 'error');
-          await saveLocalOrDownload(blob, filename);
-          savedTo = folderHandleRef.current ? 'local' : 'download';
-        }
+    if(blob){
+      if(driveToken){
+        try { await uploadToDrive(blob,filename,driveToken); storage='drive'; setLastSaved(filename); toast(`Uploaded to Google Drive: ${filename}`,'success'); }
+        catch(e){ toast('Drive upload failed, saving locally','error'); storage=await saveLocalOrDownload(blob,filename); }
       } else {
-        savedTo = await saveLocalOrDownload(blob, filename);
+        storage = await saveLocalOrDownload(blob,filename);
       }
     }
 
-    const sizeMB = blob ? `${(blob.size/1024/1024).toFixed(1)}MB` : '—';
-    setSavedVideos(prev => [{
-      id: Date.now(), orderId: oid, awb: awbVal,
-      date: new Date().toISOString().split('T')[0],
-      duration: dur, size: sizeMB, status: 'saved', storage: savedTo
-    }, ...prev].slice(0, 20));
+    const sizeMB = blob?`${(blob.size/1024/1024).toFixed(1)}MB`:'—';
+    const newVid = { id:Date.now(), orderId:oid, awb:awbVal, date:new Date().toISOString().split('T')[0], duration:dur, size:sizeMB, status:'saved', storage, filename };
+    const allVideos = [newVid, ...DB.getVideos(user.email)];
+    DB.saveVideos(user.email, allVideos);
+    setSavedVideos(allVideos.slice(0,10));
+    onVideoSaved(newVid);
 
-    setOrderId(''); setAwb(''); setTimer(0); setPhase('idle');
-    chunksRef.current = []; recorderRef.current = null; setUploadPct(0);
-    setTimeout(() => orderRef.current && orderRef.current.focus(), 200);
+    setOrderId('');setAwb('');setTimer(0);setPhase('idle');
+    chunksRef.current=[];recorderRef.current=null;
+    setTimeout(()=>orderRef.current&&orderRef.current.focus(),200);
   };
 
-  const saveLocalOrDownload = async (blob, filename) => {
-    if (folderHandleRef.current) {
-      try {
-        const fh = await folderHandleRef.current.getFileHandle(filename, { create: true });
-        const w  = await fh.createWritable();
-        await w.write(blob); await w.close();
-        setLastSaved(filename);
-        toast(`Saved to "${folderHandleRef.current.name}": ${filename}`, 'success');
-        return 'local';
-      } catch(e) { /* fall through to download */ }
+  const saveLocalOrDownload = async(blob,filename) => {
+    if(folderHandleRef.current){
+      try{
+        const fh=await folderHandleRef.current.getFileHandle(filename,{create:true});
+        const w=await fh.createWritable(); await w.write(blob); await w.close();
+        setLastSaved(filename); toast(`Saved to "${folderHandleRef.current.name}"`,'success'); return 'local';
+      }catch(e){}
     }
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url; a.download = filename;
-    document.body.appendChild(a); a.click(); document.body.removeChild(a);
-    setTimeout(() => URL.revokeObjectURL(url), 10000);
-    toast(`Downloaded: ${filename}`, 'success');
+    const url=URL.createObjectURL(blob); const a=document.createElement('a');
+    a.href=url;a.download=filename;document.body.appendChild(a);a.click();document.body.removeChild(a);
+    setTimeout(()=>URL.revokeObjectURL(url),10000);
+    if(!folderHandleRef.current) toast(`Downloaded: ${filename} — Select a folder to auto-save`,'info');
+    else toast(`Downloaded: ${filename}`,'success');
     return 'download';
   };
 
-  const uploadToDrive = async (blob, filename, token) => {
-    // Step 1: Find or create "Zeespares Packing Videos" folder
-    let folderId = sessionStorage.getItem('drive_folder_id');
-    if (!folderId) {
-      const searchRes = await fetch(
-        `https://www.googleapis.com/drive/v3/files?q=name%3D'Zeespares+Packing+Videos'+and+mimeType%3D'application%2Fvnd.google-apps.folder'+and+trashed%3Dfalse`,
-        { headers: { Authorization: `Bearer ${token}` } }
-      );
-      const searchData = await searchRes.json();
-      if (searchData.files && searchData.files.length > 0) {
-        folderId = searchData.files[0].id;
-      } else {
-        const createRes = await fetch('https://www.googleapis.com/drive/v3/files', {
-          method: 'POST',
-          headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
-          body: JSON.stringify({ name: 'Zeespares Packing Videos', mimeType: 'application/vnd.google-apps.folder' })
-        });
-        const folderData = await createRes.json();
-        folderId = folderData.id;
-      }
-      sessionStorage.setItem('drive_folder_id', folderId);
+  const uploadToDrive = async(blob,filename,token) => {
+    let fid = sessionStorage.getItem('drive_folder_id');
+    if(!fid){
+      const r=await fetch(`https://www.googleapis.com/drive/v3/files?q=${encodeURIComponent("name='Zeespares Packing Videos' and mimeType='application/vnd.google-apps.folder' and trashed=false")}`,{headers:{Authorization:`Bearer ${token}`}});
+      const d=await r.json();
+      if(d.files&&d.files.length>0){fid=d.files[0].id;}
+      else{const cr=await fetch('https://www.googleapis.com/drive/v3/files',{method:'POST',headers:{Authorization:`Bearer ${token}`,'Content-Type':'application/json'},body:JSON.stringify({name:'Zeespares Packing Videos',mimeType:'application/vnd.google-apps.folder'})});const cd=await cr.json();fid=cd.id;}
+      sessionStorage.setItem('drive_folder_id',fid);
     }
-
-    // Step 2: Upload file
-    const metadata = { name: filename, parents: [folderId] };
-    const form = new FormData();
-    form.append('metadata', new Blob([JSON.stringify(metadata)], { type: 'application/json' }));
-    form.append('file', blob, filename);
-    const uploadRes = await fetch(
-      'https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart',
-      { method: 'POST', headers: { Authorization: `Bearer ${token}` }, body: form }
-    );
-    if (!uploadRes.ok) throw new Error('Upload failed');
-    return await uploadRes.json();
+    const form=new FormData();
+    form.append('metadata',new Blob([JSON.stringify({name:filename,parents:[fid]})],{type:'application/json'}));
+    form.append('file',blob,filename);
+    const up=await fetch('https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart',{method:'POST',headers:{Authorization:`Bearer ${token}`},body:form});
+    if(!up.ok) throw new Error('Upload failed');
+    return up.json();
   };
 
-  const onOrderChange = (val) => { if (phase !== 'idle') return; setOrderId(val); };
-  const onOrderKeyDown = (e) => {
-    if (e.key === 'Enter' && orderId.trim().length >= 3 && phase === 'idle') {
-      e.preventDefault(); startRecording(orderId.trim());
-    }
-  };
-  const onAwbChange = (val) => { if (phase !== 'recording') return; setAwb(val); };
-  const onAwbKeyDown = (e) => {
-    if (e.key === 'Enter' && awb.trim().length >= 3 && phase === 'recording') {
-      e.preventDefault(); stopAndSave(awb.trim());
-    }
-  };
-
-  const fmt = (s) => `${String(Math.floor(s/60)).padStart(2,'0')}:${String(s%60).padStart(2,'0')}`;
-  const isIdle = phase==='idle', isRecording = phase==='recording', isSaving = phase==='saving';
-
-  const storageLabel = driveToken ? `📂 Google Drive (${driveEmail||'connected'})` : folderName ? `📁 ${folderName}` : '📥 Browser download';
+  const onOrderKeyDown = e => { if(e.key==='Enter'&&orderId.trim().length>=3&&phase==='idle'){e.preventDefault();startRecording(orderId.trim());} };
+  const onAwbKeyDown   = e => { if(e.key==='Enter'&&awb.trim().length>=3&&phase==='recording'){e.preventDefault();stopAndSave(awb.trim());} };
+  const fmt = s => `${String(Math.floor(s/60)).padStart(2,'0')}:${String(s%60).padStart(2,'0')}`;
+  const isIdle=phase==='idle', isRec=phase==='recording', isSaving=phase==='saving';
+  const storageLabel = driveToken?`📂 Google Drive (${driveEmail||''})`:folderName?`📁 ${folderName}`:'📥 Browser download';
 
   return (
     <div>
-      {/* STORAGE BAR */}
-      <div style={{
-        display:'flex',alignItems:'center',justifyContent:'space-between',flexWrap:'wrap',gap:10,
+      {/* Storage bar */}
+      <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',flexWrap:'wrap',gap:10,
         padding:'12px 18px',borderRadius:12,marginBottom:18,
-        background: driveToken ? 'rgba(30,144,255,0.08)' : folderName ? 'rgba(10,138,97,0.1)' : 'rgba(255,165,2,0.08)',
-        border:`1px solid ${driveToken?'rgba(30,144,255,0.35)':folderName?'rgba(10,138,97,0.35)':'rgba(255,165,2,0.35)'}`
-      }}>
+        background:driveToken?'rgba(30,144,255,0.08)':folderName?'rgba(10,138,97,0.1)':'rgba(255,165,2,0.08)',
+        border:`1px solid ${driveToken?'rgba(30,144,255,0.35)':folderName?'rgba(10,138,97,0.35)':'rgba(255,165,2,0.35)'}`}}>
         <div style={{display:'flex',alignItems:'center',gap:10}}>
           <span style={{fontSize:18}}>{driveToken?'📂':folderName?'📁':'⚠️'}</span>
           <div>
             <div style={{fontSize:13,fontWeight:700,color:driveToken?'var(--blue)':folderName?'var(--green-light)':'var(--amber)'}}>
-              {driveToken ? `Google Drive connected — ${driveEmail||''}` : folderName ? `Save folder: "${folderName}"` : 'No save location selected'}
+              {driveToken?`Google Drive: ${driveEmail||'Connected'}`:folderName?`Folder: "${folderName}"`:'No save location set'}
             </div>
             <div style={{fontSize:11,color:'var(--text2)'}}>
-              {driveToken ? 'Videos will auto-upload to "Zeespares Packing Videos" folder in your Drive'
-                : folderName ? (lastSaved ? `Last: ${lastSaved.substring(0,45)}` : 'Videos save directly to this folder')
-                : 'Connect Google Drive (Settings) or select a local folder below'}
+              {driveToken?'Videos auto-upload to "Zeespares Packing Videos" in your Drive':
+               folderName?(lastSaved?`Last: ${lastSaved.substring(0,40)}`:'Videos save directly to this folder'):
+               'Connect Google Drive in Settings, or select a local folder'}
             </div>
           </div>
         </div>
-        {!driveToken && (
-          <button className="btn btn-secondary btn-sm" onClick={selectFolder}>
-            {folderName ? '🔄 Change Folder' : '📂 Select Local Folder'}
-          </button>
-        )}
+        {!driveToken&&<button className="btn btn-secondary btn-sm" onClick={selectFolder}>{folderName?'🔄 Change Folder':'📂 Select Folder'}</button>}
       </div>
 
       <div className="record-grid" style={{alignItems:'start'}}>
         {/* LEFT */}
         <div className="panel">
           <div className="panel-title">📱 Scan &amp; Record</div>
-          {camError && (
-            <div style={{background:'rgba(255,71,87,0.1)',border:'1px solid rgba(255,71,87,0.3)',
-              borderRadius:9,padding:'10px 14px',marginBottom:14,fontSize:12,color:'var(--red)',lineHeight:1.5}}>
-              ⚠️ {camError}
-            </div>
-          )}
-          {/* ORDER ID */}
+          {camError&&<div style={{background:'rgba(255,71,87,0.1)',border:'1px solid rgba(255,71,87,0.3)',borderRadius:9,padding:'10px 14px',marginBottom:14,fontSize:12,color:'var(--red)',lineHeight:1.5}}>⚠️ {camError}</div>}
+
           <div className="scan-field">
-            <div className="scan-label">
-              <span>① Order ID</span>
-              {isRecording && <span className="chip chip-green">✓ Scanned</span>}
-              {isIdle && <span style={{fontSize:11,color:'var(--text3)'}}>Scan barcode → Enter</span>}
-            </div>
+            <div className="scan-label"><span>① Order ID</span>{isRec&&<span className="chip chip-green">✓ Scanned</span>}{isIdle&&<span style={{fontSize:11,color:'var(--text3)'}}>Scan barcode → Enter</span>}</div>
             <div className="scan-input-wrap">
               <span className="scan-icon">🔍</span>
-              <input ref={orderRef}
-                className={`scan-input${isRecording||isSaving?' done':''}`}
-                placeholder="Scan Order ID barcode or type and press Enter..."
-                value={orderId} onChange={e=>onOrderChange(e.target.value)}
+              <input ref={orderRef} className={`scan-input${isRec||isSaving?' done':''}`}
+                placeholder="Scan Order ID or type and press Enter..."
+                value={orderId} onChange={e=>{if(phase==='idle')setOrderId(e.target.value);}}
                 onKeyDown={onOrderKeyDown} disabled={!isIdle} />
-              {(isRecording||isSaving) && <span className="scan-check">✓</span>}
+              {(isRec||isSaving)&&<span className="scan-check">✓</span>}
             </div>
-            {isIdle && orderId.length >= 3 && (
-              <button className="btn btn-primary btn-sm" style={{marginTop:8,width:'100%'}}
-                onClick={()=>startRecording(orderId.trim())}>▶ Start Recording</button>
-            )}
+            {isIdle&&orderId.length>=3&&<button className="btn btn-primary btn-sm" style={{marginTop:8,width:'100%'}} onClick={()=>startRecording(orderId.trim())}>▶ Start Recording</button>}
           </div>
-          {/* AWB */}
+
           <div className="scan-field">
-            <div className="scan-label">
-              <span>② AWB Number</span>
-              {isSaving && <span className="chip chip-green">✓ Scanned</span>}
-              {isRecording && <span style={{fontSize:11,color:'var(--red)',fontWeight:700}}>● Recording in progress</span>}
-            </div>
+            <div className="scan-label"><span>② AWB Number</span>{isSaving&&<span className="chip chip-green">✓ Scanned</span>}{isRec&&<span style={{fontSize:11,color:'var(--red)',fontWeight:700}}>● Recording...</span>}</div>
             <div className="scan-input-wrap">
               <span className="scan-icon">📦</span>
-              <input ref={awbRef}
-                className={`scan-input${isRecording?' active':''}${isSaving?' done':''}`}
-                placeholder={isRecording?"Scan AWB barcode or type and press Enter to stop...":"Waiting for Order ID..."}
-                value={awb} onChange={e=>onAwbChange(e.target.value)}
-                onKeyDown={onAwbKeyDown} disabled={!isRecording} />
-              {isSaving && <span className="scan-check">✓</span>}
+              <input ref={awbRef} className={`scan-input${isRec?' active':''}${isSaving?' done':''}`}
+                placeholder={isRec?"Scan AWB or type and press Enter to stop...":"Waiting for Order ID..."}
+                value={awb} onChange={e=>{if(phase==='recording')setAwb(e.target.value);}}
+                onKeyDown={onAwbKeyDown} disabled={!isRec} />
+              {isSaving&&<span className="scan-check">✓</span>}
             </div>
-            {isRecording && awb.length >= 3 && (
-              <button className="btn btn-danger btn-sm" style={{marginTop:8,width:'100%'}}
-                onClick={()=>stopAndSave(awb.trim())}>⬛ Stop &amp; Save Video</button>
-            )}
+            {isRec&&awb.length>=3&&<button className="btn btn-danger btn-sm" style={{marginTop:8,width:'100%'}} onClick={()=>stopAndSave(awb.trim())}>⬛ Stop &amp; Save</button>}
           </div>
-          {/* STATUS */}
+
           <div className="status-card" style={{marginTop:4}}>
             {[
-              {label:'Status', value: isSaving
-                ? <span style={{color:'var(--amber)',fontWeight:700}}>💾 Saving{driveToken?' to Drive':''}...</span>
-                : isRecording
-                  ? <span style={{display:'flex',alignItems:'center',gap:6,color:'var(--red)',fontWeight:700}}>
-                      <span style={{width:8,height:8,borderRadius:'50%',background:'var(--red)',display:'inline-block',animation:'pulse 1s infinite'}}></span>REC
-                    </span>
-                  : <span style={{color:'var(--green-light)',fontWeight:700}}>READY ✓</span>},
-              {label:'Duration', value:<span style={{fontFamily:'JetBrains Mono',fontSize:20,fontWeight:800,color:isRecording?'var(--red)':'var(--text2)'}}>{fmt(timer)}</span>},
-              {label:'Save to', value:<span style={{fontSize:11,color:driveToken?'var(--blue)':'var(--green-light)',fontWeight:600}}>{storageLabel}</span>},
-              {label:'Est. Size', value:`${Math.max(5,Math.round(timer*0.35))} MB`},
+              {l:'Status', v:isSaving?<span style={{color:'var(--amber)',fontWeight:700}}>💾 Saving{driveToken?' to Drive':''}...</span>:isRec?<span style={{display:'flex',alignItems:'center',gap:6,color:'var(--red)',fontWeight:700}}><span style={{width:8,height:8,borderRadius:'50%',background:'var(--red)',display:'inline-block',animation:'pulse 1s infinite'}}></span>RECORDING</span>:<span style={{color:'var(--green-light)',fontWeight:700}}>READY ✓</span>},
+              {l:'Duration', v:<span style={{fontFamily:'JetBrains Mono',fontSize:20,fontWeight:800,color:isRec?'var(--red)':'var(--text2)'}}>{fmt(timer)}</span>},
+              {l:'Save to', v:<span style={{fontSize:11,color:driveToken?'var(--blue)':'var(--green-light)',fontWeight:600}}>{storageLabel}</span>},
+              {l:'Est. Size', v:`${Math.max(5,Math.round(timer*0.35))} MB`},
             ].map((r,i)=>(
               <div className="status-row" key={i} style={{marginBottom:i<3?10:0}}>
-                <span className="status-label">{r.label}</span>
-                <span className="status-value">{r.value}</span>
+                <span className="status-label">{r.l}</span><span className="status-value">{r.v}</span>
               </div>
             ))}
           </div>
+
           <div style={{marginTop:14,padding:'12px 14px',background:'var(--bg3)',borderRadius:9}}>
             <div style={{fontSize:12,fontWeight:700,color:'var(--text)',marginBottom:8}}>⚡ Workflow</div>
-            {[
-              {n:1,text:'Scan Order ID → press Enter → camera + recording starts',done:isRecording||isSaving},
-              {n:2,text:'Scan AWB → press Enter → video saves automatically',done:isSaving},
-              {n:3,text:'Cursor returns to Order ID → scan next order',done:false},
-            ].map(s=>(
-              <div key={s.n} style={{display:'flex',gap:8,alignItems:'flex-start',marginBottom:5,opacity:s.done?1:0.55}}>
-                <span style={{color:s.done?'var(--green-light)':'var(--text3)',fontWeight:700,flexShrink:0,fontSize:12}}>{s.done?'✓':s.n}</span>
-                <span style={{fontSize:12,color:s.done?'var(--text)':'var(--text2)',lineHeight:1.4}}>{s.text}</span>
+            {[{n:1,t:'Scan Order ID → Enter → camera + recording starts',d:isRec||isSaving},
+              {n:2,t:'Scan AWB → Enter → video saves automatically',d:isSaving},
+              {n:3,t:'Cursor returns to Order ID → scan next order',d:false}].map(s=>(
+              <div key={s.n} style={{display:'flex',gap:8,alignItems:'flex-start',marginBottom:5,opacity:s.d?1:0.55}}>
+                <span style={{color:s.d?'var(--green-light)':'var(--text3)',fontWeight:700,flexShrink:0,fontSize:12}}>{s.d?'✓':s.n}</span>
+                <span style={{fontSize:12,color:s.d?'var(--text)':'var(--text2)',lineHeight:1.4}}>{s.t}</span>
               </div>
             ))}
           </div>
         </div>
 
-        {/* RIGHT: VIDEO */}
+        {/* RIGHT */}
         <div style={{display:'flex',flexDirection:'column',gap:16}}>
           <div style={{position:'relative',background:'#000',borderRadius:16,overflow:'hidden',border:'1px solid var(--border)',aspectRatio:'16/9',minHeight:260}}>
-            <video ref={videoRef} autoPlay muted playsInline
-              style={{width:'100%',height:'100%',objectFit:'cover',display:'block',opacity:isRecording?1:0,transition:'opacity 0.4s'}} />
-            {isIdle && (
-              <div style={{position:'absolute',inset:0,display:'flex',flexDirection:'column',alignItems:'center',justifyContent:'center',gap:12,background:'var(--bg3)',color:'var(--text3)'}}>
-                <span style={{fontSize:52,opacity:0.35}}>📷</span>
-                <span style={{fontSize:14,fontWeight:500}}>Scan an Order ID to start recording</span>
-                {driveToken && <span style={{fontSize:12,color:'var(--blue)',fontWeight:600}}>📂 Drive connected — videos auto-upload</span>}
-                {!driveToken && folderName && <span style={{fontSize:12,color:'var(--green-light)',fontWeight:600}}>📁 Ready: {folderName}</span>}
+            <video ref={videoRef} autoPlay muted playsInline style={{width:'100%',height:'100%',objectFit:'cover',display:'block',opacity:isRec?1:0,transition:'opacity 0.4s'}} />
+            {isIdle&&<div style={{position:'absolute',inset:0,display:'flex',flexDirection:'column',alignItems:'center',justifyContent:'center',gap:12,background:'var(--bg3)',color:'var(--text3)'}}>
+              <span style={{fontSize:52,opacity:0.35}}>📷</span>
+              <span style={{fontSize:14,fontWeight:500}}>Scan an Order ID to start recording</span>
+              {driveToken&&<span style={{fontSize:12,color:'var(--blue)',fontWeight:600}}>📂 Drive connected — videos auto-upload</span>}
+              {!driveToken&&folderName&&<span style={{fontSize:12,color:'var(--green-light)',fontWeight:600}}>📁 {folderName}</span>}
+            </div>}
+            {isSaving&&<div style={{position:'absolute',inset:0,display:'flex',flexDirection:'column',alignItems:'center',justifyContent:'center',gap:12,background:'rgba(0,0,0,0.8)',backdropFilter:'blur(4px)'}}>
+              <span style={{fontSize:40}}>{driveToken?'📂':'💾'}</span>
+              <span style={{fontSize:16,fontWeight:700,color:'#fff'}}>{driveToken?'Uploading to Google Drive...':'Saving video...'}</span>
+            </div>}
+            {isRec&&<>
+              <div style={{position:'absolute',top:14,left:14,display:'flex',alignItems:'center',gap:7,background:'rgba(0,0,0,0.65)',borderRadius:20,padding:'6px 13px',backdropFilter:'blur(6px)'}}>
+                <span style={{width:9,height:9,borderRadius:'50%',background:'var(--red)',display:'inline-block',animation:'pulse 1s infinite'}}></span>
+                <span style={{fontSize:12,fontWeight:700,color:'#fff',letterSpacing:1}}>REC</span>
               </div>
-            )}
-            {isSaving && (
-              <div style={{position:'absolute',inset:0,display:'flex',flexDirection:'column',alignItems:'center',justifyContent:'center',gap:12,background:'rgba(0,0,0,0.8)',backdropFilter:'blur(4px)'}}>
-                <span style={{fontSize:40}}>{driveToken?'📂':'💾'}</span>
-                <span style={{fontSize:16,fontWeight:700,color:'#fff'}}>{driveToken?'Uploading to Google Drive...':'Saving video...'}</span>
-                <span style={{fontSize:13,color:'rgba(255,255,255,0.6)'}}>{orderId}</span>
-              </div>
-            )}
-            {isRecording && (
-              <>
-                <div style={{position:'absolute',top:14,left:14,display:'flex',alignItems:'center',gap:7,background:'rgba(0,0,0,0.65)',borderRadius:20,padding:'6px 13px',backdropFilter:'blur(6px)'}}>
-                  <span style={{width:9,height:9,borderRadius:'50%',background:'var(--red)',display:'inline-block',animation:'pulse 1s infinite'}}></span>
-                  <span style={{fontSize:12,fontWeight:700,color:'#fff',letterSpacing:1}}>REC</span>
-                </div>
-                <div style={{position:'absolute',top:14,right:14,background:'rgba(0,0,0,0.65)',borderRadius:20,padding:'6px 14px',backdropFilter:'blur(6px)',fontFamily:'JetBrains Mono',fontSize:15,fontWeight:700,color:'#fff'}}>{fmt(timer)}</div>
-                <div style={{position:'absolute',bottom:14,left:14,background:'rgba(0,0,0,0.55)',padding:'3px 10px',borderRadius:6,fontFamily:'JetBrains Mono',fontSize:11,color:'rgba(255,255,255,0.75)'}}>{currentTime.toLocaleString('en-IN')}</div>
-                <div style={{position:'absolute',bottom:14,right:14,background:'rgba(0,0,0,0.55)',padding:'3px 10px',borderRadius:6,fontFamily:'JetBrains Mono',fontSize:11,color:'rgba(255,255,255,0.75)'}}>{orderId}</div>
-              </>
-            )}
+              <div style={{position:'absolute',top:14,right:14,background:'rgba(0,0,0,0.65)',borderRadius:20,padding:'6px 14px',backdropFilter:'blur(6px)',fontFamily:'JetBrains Mono',fontSize:15,fontWeight:700,color:'#fff'}}>{fmt(timer)}</div>
+              <div style={{position:'absolute',bottom:14,left:14,background:'rgba(0,0,0,0.55)',padding:'3px 10px',borderRadius:6,fontFamily:'JetBrains Mono',fontSize:11,color:'rgba(255,255,255,0.75)'}}>{currentTime.toLocaleString('en-IN')}</div>
+              <div style={{position:'absolute',bottom:14,right:14,background:'rgba(0,0,0,0.55)',padding:'3px 10px',borderRadius:6,fontFamily:'JetBrains Mono',fontSize:11,color:'rgba(255,255,255,0.75)'}}>{orderId}</div>
+            </>}
           </div>
-          {/* RECENT */}
+
           <div className="panel" style={{padding:'16px 20px'}}>
             <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',marginBottom:12}}>
               <span style={{fontSize:13,fontWeight:700,color:'var(--text2)',letterSpacing:'0.5px'}}>RECENT RECORDINGS</span>
               <span className="chip chip-green">{savedVideos.length} saved</span>
             </div>
-            <div style={{display:'flex',gap:10,overflowX:'auto',paddingBottom:4}}>
-              {savedVideos.slice(0,8).map(v=>(
-                <div key={v.id} style={{flexShrink:0,width:130,background:'var(--bg3)',borderRadius:10,padding:'10px 12px',border:'1px solid var(--border)'}}>
-                  <div style={{fontSize:22,marginBottom:6,textAlign:'center'}}>{v.storage==='drive'?'📂':'🎬'}</div>
-                  <div style={{fontSize:11,fontFamily:'JetBrains Mono',color:'var(--green-light)',fontWeight:700,marginBottom:4,whiteSpace:'nowrap',overflow:'hidden',textOverflow:'ellipsis'}} title={v.orderId}>{v.orderId}</div>
-                  <div style={{fontSize:10,color:'var(--text3)',marginBottom:2}}>{v.duration} · {v.size}</div>
-                  <div style={{fontSize:9,color:'var(--text3)',textTransform:'uppercase',letterSpacing:'0.5px'}}>{v.storage}</div>
-                </div>
-              ))}
-            </div>
+            {savedVideos.length===0
+              ? <div style={{textAlign:'center',color:'var(--text3)',fontSize:13,padding:'16px 0'}}>No recordings yet — scan your first order above</div>
+              : <div style={{display:'flex',gap:10,overflowX:'auto',paddingBottom:4}}>
+                  {savedVideos.slice(0,8).map(v=>(
+                    <div key={v.id} style={{flexShrink:0,width:130,background:'var(--bg3)',borderRadius:10,padding:'10px 12px',border:'1px solid var(--border)'}}>
+                      <div style={{fontSize:22,marginBottom:6,textAlign:'center'}}>{v.storage==='drive'?'📂':'🎬'}</div>
+                      <div style={{fontSize:11,fontFamily:'JetBrains Mono',color:'var(--green-light)',fontWeight:700,marginBottom:4,whiteSpace:'nowrap',overflow:'hidden',textOverflow:'ellipsis'}} title={v.orderId}>{v.orderId}</div>
+                      <div style={{fontSize:10,color:'var(--text3)',marginBottom:2}}>{v.duration} · {v.size}</div>
+                      <div style={{fontSize:9,color:'var(--text3)',textTransform:'uppercase',letterSpacing:'0.5px'}}>{v.storage}</div>
+                    </div>
+                  ))}
+                </div>}
           </div>
         </div>
       </div>
@@ -770,224 +850,28 @@ function RecordingPage({ user, toast, driveToken, driveEmail }) {
   );
 }
 
-// ============ SETTINGS ============
-function SettingsPage({ user, toast, driveToken, driveEmail, onDriveConnect, onDriveDisconnect }) {
-  const [ts,        setTs]        = useState(true);
-  const [audio,     setAudio]     = useState(true);
-  const [autoStart, setAutoStart] = useState(true);
-
-  return (
-    <div className="settings-grid">
-      {/* Recording */}
-      <div className="settings-section">
-        <div className="settings-title">🎬 Recording Settings</div>
-        {[
-          {label:'Timestamp Overlay',desc:'Show date/time burned into video',state:ts,set:setTs},
-          {label:'Record Audio',desc:'Include audio in recordings',state:audio,set:setAudio},
-          {label:'Auto-start on Order ID',desc:'Start recording immediately when Order ID is entered',state:autoStart,set:setAutoStart},
-        ].map((s,i)=>(
-          <div className="setting-row" key={i}>
-            <div className="setting-info"><div className="setting-name">{s.label}</div><div className="setting-desc">{s.desc}</div></div>
-            <label className="toggle"><input type="checkbox" checked={s.state} onChange={e=>s.set(e.target.checked)}/><span className="toggle-slider"></span></label>
-          </div>
-        ))}
-        <div className="setting-row">
-          <div className="setting-info"><div className="setting-name">Video Quality</div><div className="setting-desc">Higher = larger file size</div></div>
-          <select className="form-input form-select" style={{width:120,padding:'8px 12px',fontSize:12}}>
-            <option>720p HD</option><option>1080p FHD</option><option>480p SD</option>
-          </select>
-        </div>
-      </div>
-
-      {/* Google Drive */}
-      <div className="settings-section">
-        <div className="settings-title">📂 Google Drive Integration</div>
-        <div style={{background:'var(--bg3)',borderRadius:12,padding:'18px',marginBottom:16}}>
-          <div style={{display:'flex',alignItems:'center',gap:14,marginBottom:14}}>
-            <div style={{width:44,height:44,borderRadius:10,background:'rgba(30,144,255,0.15)',border:'1px solid rgba(30,144,255,0.3)',display:'flex',alignItems:'center',justifyContent:'center',fontSize:22,flexShrink:0}}>📂</div>
-            <div>
-              <div style={{fontWeight:700,fontSize:14}}>Google Drive</div>
-              <div style={{fontSize:12,color:'var(--text2)',marginTop:2}}>
-                {driveToken ? `Connected: ${driveEmail||'Google Account'}` : 'Not connected — videos save locally only'}
-              </div>
-            </div>
-            <div style={{marginLeft:'auto'}}>
-              {driveToken
-                ? <span className="badge badge-green">● Connected</span>
-                : <span className="badge badge-amber">Disconnected</span>}
-            </div>
-          </div>
-          {driveToken ? (
-            <div>
-              <div style={{fontSize:12,color:'var(--text2)',marginBottom:12,padding:'10px 12px',background:'rgba(10,138,97,0.08)',borderRadius:8,border:'1px solid rgba(10,138,97,0.2)'}}>
-                ✅ Videos will auto-upload to <strong style={{color:'var(--green-light)'}}>My Drive → Zeespares Packing Videos</strong> folder
-              </div>
-              <button className="btn btn-danger btn-sm" style={{width:'100%'}} onClick={onDriveDisconnect}>Disconnect Google Drive</button>
-            </div>
-          ) : (
-            <div>
-              <div style={{fontSize:12,color:'var(--text2)',marginBottom:12,lineHeight:1.6}}>
-                Connect your Google account to automatically save all packing videos to your Google Drive. Videos are organized in a dedicated folder.
-              </div>
-              <button className="btn btn-primary" style={{width:'100%',background:'var(--blue)'}} onClick={onDriveConnect}>
-                <span>🔗</span> Connect Google Drive
-              </button>
-            </div>
-          )}
-        </div>
-        {driveToken && (
-          <div style={{fontSize:12,color:'var(--text2)',padding:'10px 12px',background:'var(--bg3)',borderRadius:8}}>
-            <div style={{fontWeight:700,color:'var(--text)',marginBottom:4}}>Drive folder structure:</div>
-            <div style={{fontFamily:'JetBrains Mono',lineHeight:1.8,opacity:0.8}}>
-              My Drive/<br/>
-              &nbsp;&nbsp;└── 📁 Zeespares Packing Videos/<br/>
-              &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;├── ORD-001__AWB123.webm<br/>
-              &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;└── ORD-002__AWB456.webm
-            </div>
-          </div>
-        )}
-      </div>
-
-      {/* Subscription */}
-      <div className="settings-section">
-        <div className="settings-title">💳 Subscription</div>
-        <div style={{background:'var(--bg3)',borderRadius:12,padding:'16px',marginBottom:16,border:'1px solid var(--border2)'}}>
-          <div style={{display:'flex',justifyContent:'space-between',alignItems:'center',marginBottom:8}}>
-            <span style={{fontWeight:700}}>Current Plan</span>
-            <span className="badge badge-green">{user.plan.toUpperCase()}</span>
-          </div>
-          <div style={{fontSize:13,color:'var(--text2)',marginBottom:12}}>
-            {user.plan==='free'?'Local storage only, 10 videos/month':user.plan==='pro'?'Google Drive + local, 100 videos/month — ₹999/mo':'All features, unlimited — ₹2499/mo'}
-          </div>
-          <div className="progress-bar"><div className="progress-fill" style={{width:user.plan==='free'?'60%':'35%'}}></div></div>
-          <div style={{display:'flex',justifyContent:'space-between',marginTop:6,fontSize:11,color:'var(--text3)'}}>
-            <span>{user.plan==='free'?'6/10 videos used':'35/100 videos used'}</span>
-            <span>Resets in 12 days</span>
-          </div>
-        </div>
-        <button className="btn btn-primary" style={{width:'100%'}} onClick={()=>window.openRazorpay&&window.openRazorpay('pro')}>
-          ⬆ Upgrade Plan
-        </button>
-      </div>
-
-      {/* Account Info */}
-      <div className="settings-section">
-        <div className="settings-title">👤 Account</div>
-        <div className="setting-row">
-          <div className="setting-info"><div className="setting-name">Email</div><div className="setting-desc">{user.email}</div></div>
-        </div>
-        <div className="setting-row">
-          <div className="setting-info"><div className="setting-name">Role</div><div className="setting-desc">{user.role}</div></div>
-          <span className="badge badge-green">{user.role.toUpperCase()}</span>
-        </div>
-        <div className="setting-row">
-          <div className="setting-info"><div className="setting-name">Plan</div><div className="setting-desc">Billing & subscription</div></div>
-          <span className={`badge ${user.plan==='premium'?'badge-amber':user.plan==='pro'?'badge-green':'badge-blue'}`}>{user.plan.toUpperCase()}</span>
-        </div>
-      </div>
-    </div>
-  );
-}
-
-// ============ PLANS PAGE ============
-function PlansPage({ user, toast, onUpgrade }) {
-  const [loading, setLoading] = useState(null);
-
-  const handleBuy = (plan) => {
-    if (!window.Razorpay) { toast('Razorpay is loading, please wait...', 'error'); return; }
-    setLoading(plan.id);
-    const options = {
-      key: RAZORPAY_KEY,
-      amount: plan.price * 100, // paise
-      currency: 'INR',
-      name: 'Zeespares VMS',
-      description: `${plan.name} Plan — ₹${plan.price}/month`,
-      image: 'https://zeespares-vms.vercel.app/favicon.ico',
-      handler: function(response) {
-        toast(`Payment successful! Payment ID: ${response.razorpay_payment_id}`, 'success');
-        onUpgrade(plan.id);
-        setLoading(null);
-      },
-      prefill: { name: user.name, email: user.email },
-      notes: { plan: plan.id, userId: user.email },
-      theme: { color: '#0A8A61' },
-      modal: { ondismiss: () => setLoading(null) }
-    };
-    const rzp = new window.Razorpay(options);
-    rzp.on('payment.failed', (resp) => {
-      toast(`Payment failed: ${resp.error.description}`, 'error');
-      setLoading(null);
-    });
-    rzp.open();
-  };
-
-  window.openRazorpay = handleBuy;
-
-  return (
-    <div>
-      <div style={{textAlign:'center',marginBottom:32}}>
-        <div style={{fontSize:28,fontWeight:800,marginBottom:8,letterSpacing:-0.5}}>Choose Your Plan</div>
-        <div style={{color:'var(--text2)',fontSize:15}}>Protect every order. Scale as you grow.</div>
-      </div>
-      <div className="plans-grid">
-        {PLANS.map(p=>(
-          <div key={p.id} className={`plan-card${p.popular?' popular':''}`}>
-            {p.popular && <div className="plan-popular-badge">MOST POPULAR</div>}
-            <div className="plan-name" style={{color:p.color}}>{p.name}</div>
-            <div className="plan-price">
-              {p.price===0?'Free':<><sup>{p.currency}</sup>{p.price.toLocaleString('en-IN')}<span>/mo</span></>}
-            </div>
-            <div className="plan-desc">{p.desc}</div>
-            <ul className="plan-features">
-              {p.features.map((f,i)=>(
-                <li key={i}>
-                  <span className={f.startsWith('✓')||!f.startsWith('✗')?'feat-check':'feat-x'}>{f.startsWith('✓')||f.startsWith('✗')?f[0]:'✓'}</span>
-                  <span>{f.replace(/^[✓✗]\s*/,'')}</span>
-                </li>
-              ))}
-            </ul>
-            {user.plan===p.id
-              ? <button className="btn btn-secondary" style={{width:'100%'}} disabled>✓ Current Plan</button>
-              : p.price===0
-                ? <button className="btn btn-secondary" style={{width:'100%'}} onClick={()=>{onUpgrade('free');toast('Downgraded to Free plan','success')}}>Use Free Plan</button>
-                : <button className="btn btn-primary" style={{background:p.color,width:'100%',opacity:loading===p.id?0.7:1}}
-                    onClick={()=>handleBuy(p)} disabled={loading===p.id}>
-                    {loading===p.id?'Opening Razorpay...':'💳 Subscribe — ₹'+p.price+'/mo'}
-                  </button>}
-          </div>
-        ))}
-      </div>
-      {/* Razorpay info */}
-      <div style={{marginTop:28,background:'var(--bg2)',border:'1px solid var(--border)',borderRadius:18,padding:'22px 28px'}}>
-        <div style={{display:'flex',alignItems:'center',gap:12,marginBottom:16}}>
-          <span style={{fontSize:22}}>💳</span>
-          <div>
-            <div style={{fontWeight:700,fontSize:15}}>Powered by Razorpay</div>
-            <div style={{fontSize:13,color:'var(--text2)'}}>100% secure payments — PCI DSS compliant, trusted by 8M+ businesses</div>
-          </div>
-        </div>
-        <div style={{display:'flex',gap:10,flexWrap:'wrap'}}>
-          {['UPI / PhonePe / GPay','Credit Card','Debit Card','Net Banking','Paytm','EMI'].map(m=>(
-            <span key={m} className="chip chip-green">{m}</span>
-          ))}
-        </div>
-      </div>
-    </div>
-  );
-}
-
-// ============ DASHBOARD ============
+// ============================================================
+// DASHBOARD
+// ============================================================
 function Dashboard({ user, navigate }) {
-  const today = MOCK_VIDEOS.filter(v => v.date === '2025-03-24').length;
+  const videos = DB.getVideos(user.email);
+  const today  = new Date().toISOString().split('T')[0];
+  const todayCount  = videos.filter(v=>v.date===today).length;
+  const monthCount  = videos.filter(v=>v.date&&v.date.startsWith(new Date().toISOString().substring(0,7))).length;
+  const planCfg = PLANS_CONFIG.find(p=>p.id===user.plan)||PLANS_CONFIG[0];
+  const usedPct = user.plan==='trial' ? Math.min(100,Math.round((user.videoCount/100)*100))
+                : user.plan==='pro'   ? Math.min(100,Math.round((user.videoCount/500)*100)) : 5;
+
   return (
     <div>
+      {user.plan==='trial'&&<TrialBanner user={user} navigate={navigate}/>}
       <div className="stats-grid">
         {[
-          { icon:'🎬', val:'847', label:'Total Recordings', change:'+24 today' },
-          { icon:'🛡️', val:'23', label:'Disputes Protected', change:'+3 this week' },
-          { icon:'💾', val:'12.4 GB', label:'Storage Used', change:'38% of limit' },
-          { icon:'📦', val:'156', label:'Orders This Month', change:'+18 vs last month' },
-        ].map((s,i) => (
+          {icon:'🎬',val:videos.length||0,label:'Total Recordings',change:todayCount>0?`+${todayCount} today`:'Start recording!'},
+          {icon:'🛡️',val:videos.length||0,label:'Orders Protected',change:'Dispute-proof'},
+          {icon:'📦',val:monthCount||0,label:'This Month',change:`Limit: ${planCfg.videoLimit>=9999?'Unlimited':planCfg.videoLimit}`},
+          {icon:'💾',val:`${user.videoCount||0}`,label:'Videos Used',change:`${usedPct}% of plan`},
+        ].map((s,i)=>(
           <div className="stat-card" key={i}>
             <div className="stat-icon">{s.icon}</div>
             <div className="stat-value">{s.val}</div>
@@ -1003,19 +887,19 @@ function Dashboard({ user, navigate }) {
           <div style={{display:'flex',flexDirection:'column',gap:8}}>
             <button className="btn btn-primary" onClick={()=>navigate('record')}>▶ Start New Recording</button>
             <button className="btn btn-secondary" onClick={()=>navigate('videos')}>📁 View All Videos</button>
-            <button className="btn btn-secondary" onClick={()=>navigate('analytics')}>📊 View Analytics</button>
+            {user.plan!=='business'&&<button className="btn btn-secondary" style={{borderColor:'var(--amber)',color:'var(--amber)'}} onClick={()=>navigate('plans')}>⬆ Upgrade Plan</button>}
           </div>
         </div>
         <div className="panel" style={{padding:'20px 22px'}}>
-          <div className="panel-title">📊 This Week</div>
-          <div style={{display:'flex',alignItems:'flex-end',gap:6,height:80}}>
-            {[12,18,9,24,31,20,15].map((v,i) => (
-              <div key={i} style={{flex:1,display:'flex',flexDirection:'column',alignItems:'center',gap:4}}>
-                <div style={{width:'100%',height:v*2+'px',background:`linear-gradient(180deg,var(--green-light),var(--green-dark))`,borderRadius:'4px 4px 0 0',opacity:.85}}></div>
-                <div style={{fontSize:9,color:'var(--text3)'}}>{'SMTWTFS'[i]}</div>
-              </div>
-            ))}
+          <div className="panel-title">📊 Plan Usage</div>
+          <div style={{marginBottom:8,fontSize:13,color:'var(--text2)'}}>
+            {user.videoCount||0} / {planCfg.videoLimit>=9999?'∞':planCfg.videoLimit} videos used
           </div>
+          <div className="progress-bar"><div className="progress-fill" style={{width:usedPct+'%'}}></div></div>
+          <div style={{marginTop:12,fontSize:12,color:'var(--text3)'}}>Plan: <strong style={{color:'var(--green-light)'}}>{planCfg.name}</strong></div>
+          {user.plan==='trial'&&<div style={{marginTop:4,fontSize:12,color:'var(--amber)'}}>
+            Trial expires: {new Date(user.trialExpiry).toLocaleDateString('en-IN')}
+          </div>}
         </div>
       </div>
 
@@ -1024,12 +908,10 @@ function Dashboard({ user, navigate }) {
           <span className="table-title">Recent Recordings</span>
           <button className="btn btn-secondary btn-sm" onClick={()=>navigate('videos')}>View All →</button>
         </div>
-        <table>
-          <thead><tr>
-            <th>Order ID</th><th>AWB</th><th>Date</th><th>Duration</th><th>Size</th><th>Storage</th><th>Status</th>
-          </tr></thead>
-          <tbody>
-            {MOCK_VIDEOS.slice(0,5).map(v => (
+        {videos.length===0
+          ? <div className="empty-state"><div className="empty-icon">🎬</div><div className="empty-text">No recordings yet — go to Record Video to start</div></div>
+          : <table><thead><tr><th>Order ID</th><th>AWB</th><th>Date</th><th>Duration</th><th>Size</th><th>Storage</th></tr></thead>
+            <tbody>{videos.slice(0,8).map(v=>(
               <tr key={v.id}>
                 <td className="mono" style={{color:'var(--green-light)'}}>{v.orderId}</td>
                 <td className="mono">{v.awb}</td>
@@ -1037,32 +919,31 @@ function Dashboard({ user, navigate }) {
                 <td>{v.duration}</td>
                 <td>{v.size}</td>
                 <td><span className="chip chip-green">{v.storage}</span></td>
-                <td><span className="badge badge-green">Saved</span></td>
               </tr>
-            ))}
-          </tbody>
-        </table>
+            ))}</tbody></table>}
       </div>
     </div>
   );
 }
 
-// ============ VIDEOS PAGE ============
-function VideosPage({ toast }) {
-  const [search, setSearch] = useState('');
-  const [videos, setVideos] = useState(MOCK_VIDEOS);
-  const [dateFilter, setDateFilter] = useState('');
+// ============================================================
+// VIDEOS PAGE
+// ============================================================
+function VideosPage({ user, toast }) {
+  const [search,      setSearch]      = useState('');
+  const [dateFilter,  setDateFilter]  = useState('');
   const [deleteModal, setDeleteModal] = useState(null);
+  const [videos,      setVideos]      = useState(()=>DB.getVideos(user.email));
 
-  const filtered = videos.filter(v =>
-    (v.orderId.toLowerCase().includes(search.toLowerCase()) || v.awb.toLowerCase().includes(search.toLowerCase())) &&
-    (!dateFilter || v.date === dateFilter)
+  const filtered = videos.filter(v=>
+    (v.orderId?.toLowerCase().includes(search.toLowerCase())||v.awb?.toLowerCase().includes(search.toLowerCase())) &&
+    (!dateFilter||v.date===dateFilter)
   );
 
-  const handleDelete = (id) => {
-    setVideos(prev => prev.filter(v => v.id !== id));
-    toast('Video deleted', 'success');
-    setDeleteModal(null);
+  const del = (id) => {
+    const updated = videos.filter(v=>v.id!==id);
+    setVideos(updated); DB.saveVideos(user.email, updated);
+    toast('Video deleted','success'); setDeleteModal(null);
   };
 
   return (
@@ -1071,329 +952,255 @@ function VideosPage({ toast }) {
         <div className="table-header">
           <span className="table-title">All Recordings ({filtered.length})</span>
           <div style={{display:'flex',gap:10,alignItems:'center'}}>
-            <input type="date" className="form-input" style={{padding:'8px 12px',fontSize:13,width:'auto'}}
-              value={dateFilter} onChange={e=>setDateFilter(e.target.value)} />
-            <div className="search-wrap">
-              <span className="search-icon">🔍</span>
-              <input className="search-input" placeholder="Search Order ID or AWB..."
-                value={search} onChange={e=>setSearch(e.target.value)} />
+            <input type="date" className="form-input" style={{padding:'8px 12px',fontSize:13,width:'auto'}} value={dateFilter} onChange={e=>setDateFilter(e.target.value)}/>
+            <div className="search-wrap"><span className="search-icon">🔍</span>
+              <input className="search-input" placeholder="Search Order ID or AWB..." value={search} onChange={e=>setSearch(e.target.value)}/>
             </div>
           </div>
         </div>
-        {filtered.length === 0 ? (
-          <div className="empty-state">
-            <div className="empty-icon">🎬</div>
-            <div className="empty-text">No recordings found</div>
-          </div>
-        ) : (
-          <table>
-            <thead><tr>
-              <th>Video</th><th>Order ID</th><th>AWB</th><th>Date</th><th>Duration</th><th>Size</th><th>Storage</th><th>Actions</th>
-            </tr></thead>
-            <tbody>
-              {filtered.map(v => (
-                <tr key={v.id}>
-                  <td><div className="thumb">🎬</div></td>
-                  <td className="mono" style={{color:'var(--green-light)'}}>{v.orderId}</td>
-                  <td className="mono">{v.awb}</td>
-                  <td style={{color:'var(--text2)'}}>{v.date}</td>
-                  <td>{v.duration}</td>
-                  <td>{v.size}</td>
-                  <td><span className="chip chip-green">{v.storage}</span></td>
-                  <td>
-                    <div style={{display:'flex',gap:6}}>
-                      <button className="btn btn-secondary btn-sm" onClick={()=>toast('Download started','success')}>↓</button>
-                      <button className="btn btn-danger btn-sm" onClick={()=>setDeleteModal(v.id)}>🗑</button>
-                    </div>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        )}
+        {filtered.length===0
+          ? <div className="empty-state"><div className="empty-icon">🎬</div><div className="empty-text">{videos.length===0?'No recordings yet':'No results found'}</div></div>
+          : <table><thead><tr><th>Order ID</th><th>AWB</th><th>Date</th><th>Duration</th><th>Size</th><th>Storage</th><th>Actions</th></tr></thead>
+            <tbody>{filtered.map(v=>(
+              <tr key={v.id}>
+                <td className="mono" style={{color:'var(--green-light)'}}>{v.orderId}</td>
+                <td className="mono">{v.awb}</td>
+                <td style={{color:'var(--text2)'}}>{v.date}</td>
+                <td>{v.duration}</td>
+                <td>{v.size}</td>
+                <td><span className="chip chip-green">{v.storage}</span></td>
+                <td><button className="btn btn-danger btn-sm" onClick={()=>setDeleteModal(v.id)}>🗑</button></td>
+              </tr>
+            ))}</tbody></table>}
       </div>
-      {deleteModal && (
-        <div className="modal-backdrop" onClick={()=>setDeleteModal(null)}>
-          <div className="modal" onClick={e=>e.stopPropagation()}>
-            <div className="modal-title">Delete Recording?</div>
-            <div className="modal-sub">This action cannot be undone. The video file will be permanently deleted.</div>
-            <div className="modal-actions">
-              <button className="btn btn-secondary" onClick={()=>setDeleteModal(null)}>Cancel</button>
-              <button className="btn btn-danger" onClick={()=>handleDelete(deleteModal)}>Delete Video</button>
-            </div>
+      {deleteModal&&<div className="modal-backdrop" onClick={()=>setDeleteModal(null)}>
+        <div className="modal" onClick={e=>e.stopPropagation()}>
+          <div className="modal-title">Delete Recording?</div>
+          <div className="modal-sub">This cannot be undone. The video metadata will be removed.</div>
+          <div className="modal-actions">
+            <button className="btn btn-secondary" onClick={()=>setDeleteModal(null)}>Cancel</button>
+            <button className="btn btn-danger" onClick={()=>del(deleteModal)}>Delete</button>
           </div>
         </div>
-      )}
+      </div>}
     </div>
   );
 }
 
-// ============ SETTINGS ============
-function SettingsPage({ user, toast }) {
-  const [ts, setTs] = useState(true);
-  const [audio, setAudio] = useState(true);
-  const [autoStart, setAutoStart] = useState(true);
-  const [storage, setStorage] = useState(user.plan==='free'?'local':'cloud');
-  const [driveConnected, setDriveConnected] = useState(false);
-
-  const storageOptions = [
-    { id:'local', icon:'💻', title:'Local Storage', desc:'Save videos to your computer. Works offline. No cloud dependency.', plan:'free' },
-    { id:'drive', icon:'📂', title:'Google Drive', desc:'Sync directly to your Google Drive. Access from anywhere.', plan:'pro' },
-    { id:'cloud', icon:'☁️', title:'Cloud Storage (S3)', desc:'Upload to secure cloud storage. 50GB included. Best for teams.', plan:'premium' },
-  ];
-
-  const planOk = (p) => {
-    if (p==='free') return true;
-    if (p==='pro') return user.plan==='pro'||user.plan==='premium';
-    if (p==='premium') return user.plan==='premium';
-    return false;
-  };
-
+// ============================================================
+// SETTINGS
+// ============================================================
+function SettingsPage({ user, toast, driveToken, driveEmail, onDriveConnect, onDriveDisconnect }) {
+  const [ts,setTs]=useState(true), [audio,setAudio]=useState(true);
   return (
     <div className="settings-grid">
-      {/* Recording Settings */}
       <div className="settings-section">
         <div className="settings-title">🎬 Recording Settings</div>
-        {[
-          { label:'Timestamp Overlay', desc:'Show date/time on video', state:ts, set:setTs },
-          { label:'Record Audio', desc:'Include audio in recordings', state:audio, set:setAudio },
-          { label:'Auto-start on Order ID', desc:'Start camera when Order ID entered', state:autoStart, set:setAutoStart },
-        ].map((s,i) => (
+        {[{l:'Timestamp Overlay',d:'Show date/time on video',s:ts,fn:setTs},{l:'Record Audio',d:'Include microphone audio',s:audio,fn:setAudio}].map((r,i)=>(
           <div className="setting-row" key={i}>
-            <div className="setting-info">
-              <div className="setting-name">{s.label}</div>
-              <div className="setting-desc">{s.desc}</div>
-            </div>
-            <label className="toggle">
-              <input type="checkbox" checked={s.state} onChange={e=>s.set(e.target.checked)} />
-              <span className="toggle-slider"></span>
-            </label>
+            <div className="setting-info"><div className="setting-name">{r.l}</div><div className="setting-desc">{r.d}</div></div>
+            <label className="toggle"><input type="checkbox" checked={r.s} onChange={e=>r.fn(e.target.checked)}/><span className="toggle-slider"></span></label>
           </div>
         ))}
         <div className="setting-row">
-          <div className="setting-info">
-            <div className="setting-name">Video Quality</div>
-            <div className="setting-desc">Higher quality = larger file sizes</div>
-          </div>
-          <select className="form-input form-select" style={{width:120,padding:'8px 12px',fontSize:12}}>
-            <option>720p HD</option>
-            <option>1080p FHD</option>
-            <option>480p SD</option>
-          </select>
+          <div className="setting-info"><div className="setting-name">Video Quality</div><div className="setting-desc">Higher = larger files</div></div>
+          <select className="form-input form-select" style={{width:120,padding:'8px 12px',fontSize:12}}><option>720p HD</option><option>1080p FHD</option><option>480p SD</option></select>
         </div>
       </div>
 
-      {/* Storage Settings */}
       <div className="settings-section">
-        <div className="settings-title">💾 Storage Mode</div>
-        {storageOptions.map(opt => {
-          const locked = !planOk(opt.plan);
-          return (
-            <div key={opt.id} className={`storage-option${storage===opt.id?' selected':''}${locked?' opacity-50':''}`}
-              style={{opacity:locked?0.5:1}}
-              onClick={()=>{ if(locked){toast(`${opt.title} requires ${opt.plan} plan`,'error');return;} setStorage(opt.id); }}>
-              <div className="storage-option-radio"></div>
-              <div>
-                <div style={{display:'flex',alignItems:'center',gap:8}}>
-                  <span style={{fontSize:16}}>{opt.icon}</span>
-                  <span className="storage-option-title">{opt.title}</span>
-                  {locked && <span className="badge badge-amber" style={{fontSize:10,padding:'2px 7px'}}>{opt.plan.toUpperCase()}</span>}
-                </div>
-                <div className="storage-option-desc">{opt.desc}</div>
-              </div>
+        <div className="settings-title">📂 Google Drive</div>
+        <div style={{background:'var(--bg3)',borderRadius:12,padding:'18px'}}>
+          <div style={{display:'flex',alignItems:'center',gap:12,marginBottom:14}}>
+            <div style={{width:44,height:44,borderRadius:10,background:'rgba(30,144,255,0.15)',border:'1px solid rgba(30,144,255,0.3)',display:'flex',alignItems:'center',justifyContent:'center',fontSize:22,flexShrink:0}}>📂</div>
+            <div>
+              <div style={{fontWeight:700,fontSize:14}}>Google Drive Sync</div>
+              <div style={{fontSize:12,color:'var(--text2)',marginTop:2}}>{driveToken?`Connected: ${driveEmail}`:'Not connected'}</div>
             </div>
-          );
-        })}
+            <div style={{marginLeft:'auto'}}>{driveToken?<span className="badge badge-green">● Live</span>:<span className="badge badge-amber">Off</span>}</div>
+          </div>
+          {driveToken
+            ? <><div style={{fontSize:12,color:'var(--text2)',marginBottom:12,padding:'10px 12px',background:'rgba(10,138,97,0.08)',borderRadius:8}}>✅ Videos upload to <strong style={{color:'var(--green-light)'}}>My Drive → Zeespares Packing Videos</strong></div>
+                <button className="btn btn-danger btn-sm" style={{width:'100%'}} onClick={onDriveDisconnect}>Disconnect</button></>
+            : <><div style={{fontSize:12,color:'var(--text2)',marginBottom:12,lineHeight:1.6}}>Connect your Google account to automatically backup all packing videos to Google Drive.</div>
+                {user.plan==='trial'
+                  ? <div style={{fontSize:12,color:'var(--amber)',padding:'10px',background:'rgba(255,165,2,0.08)',borderRadius:8}}>⚠️ Google Drive requires Pro or Business plan. <strong>Upgrade to unlock.</strong></div>
+                  : <button className="btn btn-primary" style={{width:'100%',background:'var(--blue)'}} onClick={onDriveConnect}>🔗 Connect Google Drive</button>}</>}
+        </div>
       </div>
 
-      {/* Account */}
       <div className="settings-section">
-        <div className="settings-title">🔗 Connected Accounts</div>
-        <div className="setting-row">
-          <div style={{display:'flex',alignItems:'center',gap:12}}>
-            <span style={{fontSize:24}}>📂</span>
-            <div>
-              <div className="setting-name">Google Drive</div>
-              <div className="setting-desc">{driveConnected?'Connected: your-account@gmail.com':'Not connected'}</div>
-            </div>
+        <div className="settings-title">👤 Account Info</div>
+        {[{l:'Name',v:user.name},{l:'Email',v:user.email},{l:'Role',v:user.role.toUpperCase()},{l:'Plan',v:(PLANS_CONFIG.find(p=>p.id===user.plan)||{}).name||user.plan}].map((r,i)=>(
+          <div className="setting-row" key={i}>
+            <div className="setting-info"><div className="setting-name">{r.l}</div></div>
+            <span style={{fontSize:13,fontWeight:600,color:'var(--green-light)'}}>{r.v}</span>
           </div>
-          {driveConnected
-            ? <button className="btn btn-danger btn-sm" onClick={()=>{setDriveConnected(false);toast('Google Drive disconnected','success')}}>Disconnect</button>
-            : <button className="btn btn-secondary btn-sm" onClick={()=>{if(user.plan==='free'){toast('Google Drive requires Pro plan','error');return;}setDriveConnected(true);toast('Google Drive connected!','success')}}>Connect</button>}
+        ))}
+        {user.plan==='trial'&&<div style={{marginTop:12,padding:'10px 12px',background:'rgba(255,165,2,0.08)',border:'1px solid rgba(255,165,2,0.3)',borderRadius:9,fontSize:12,color:'var(--amber)'}}>
+          Trial expires: {new Date(user.trialExpiry).toLocaleDateString('en-IN')} · {Math.max(0,100-user.videoCount)} videos remaining
+        </div>}
+      </div>
+
+      <div className="settings-section">
+        <div className="settings-title">🔒 Security</div>
+        <div className="setting-row">
+          <div className="setting-info"><div className="setting-name">Password</div><div className="setting-desc">Change your login password</div></div>
+          <button className="btn btn-secondary btn-sm" onClick={()=>toast('Password change coming soon','info')}>Change</button>
         </div>
         <div className="setting-row">
-          <div style={{display:'flex',alignItems:'center',gap:12}}>
-            <span style={{fontSize:24}}>☁️</span>
-            <div>
-              <div className="setting-name">AWS S3 / Cloud</div>
-              <div className="setting-desc">Cloud storage endpoint</div>
-            </div>
-          </div>
-          <button className="btn btn-secondary btn-sm" onClick={()=>toast('Configure AWS credentials in .env','success')}>Configure</button>
+          <div className="setting-info"><div className="setting-name">Session</div><div className="setting-desc">You are currently logged in</div></div>
+          <span className="badge badge-green">● Active</span>
         </div>
-      </div>
-
-      {/* Subscription */}
-      <div className="settings-section">
-        <div className="settings-title">💳 Subscription</div>
-        <div style={{background:'var(--bg3)',borderRadius:'12px',padding:'16px',marginBottom:16,border:'1px solid var(--border2)'}}>
-          <div style={{display:'flex',justifyContent:'space-between',alignItems:'center',marginBottom:8}}>
-            <span style={{fontWeight:700}}>Current Plan</span>
-            <span className="badge badge-green">{user.plan.toUpperCase()}</span>
-          </div>
-          <div style={{fontSize:13,color:'var(--text2)',marginBottom:12}}>
-            {user.plan==='free'?'Local storage only, 10 videos/month':user.plan==='pro'?'Google Drive, 100 videos/month, ₹999/mo':'All features, unlimited, ₹2499/mo'}
-          </div>
-          <div className="progress-bar"><div className="progress-fill" style={{width:user.plan==='free'?'60%':'35%'}}></div></div>
-          <div style={{display:'flex',justifyContent:'space-between',marginTop:6,fontSize:11,color:'var(--text3)'}}>
-            <span>{user.plan==='free'?'6/10 videos used':'35/100 videos used'}</span>
-            <span>Resets in 12 days</span>
-          </div>
-        </div>
-        <button className="btn btn-primary btn-sm" style={{width:'100%'}} onClick={()=>toast('Redirecting to Razorpay...','success')}>
-          ⬆ Upgrade Plan
-        </button>
       </div>
     </div>
   );
 }
 
-// ============ ANALYTICS ============
-function AnalyticsPage() {
-  const weekData = [12,18,9,24,31,20,15];
-  const days = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
-  const maxBar = Math.max(...weekData);
-
+// ============================================================
+// ANALYTICS
+// ============================================================
+function AnalyticsPage({ user }) {
+  const videos = DB.getVideos(user.email);
+  const last7 = Array.from({length:7},(_,i)=>{
+    const d=new Date(); d.setDate(d.getDate()-6+i);
+    const ds=d.toISOString().split('T')[0];
+    return {label:['Sun','Mon','Tue','Wed','Thu','Fri','Sat'][d.getDay()], count:videos.filter(v=>v.date===ds).length};
+  });
+  const maxBar = Math.max(...last7.map(d=>d.count),1);
+  const driveCount = videos.filter(v=>v.storage==='drive').length;
+  const localCount = videos.filter(v=>v.storage==='local').length;
+  const dlCount    = videos.filter(v=>v.storage==='download').length;
   return (
     <div>
       <div className="stats-grid" style={{marginBottom:20}}>
-        {[
-          {icon:'📹',val:'847',label:'Total Videos',sub:'All time'},
-          {icon:'🛡️',val:'23',label:'Claims Resolved',sub:'Using video proof'},
-          {icon:'💾',val:'12.4 GB',label:'Cloud Storage',sub:'50 GB plan'},
-          {icon:'💰',val:'₹1.2L',label:'Disputes Prevented',sub:'Estimated value'},
+        {[{icon:'📹',val:videos.length,label:'Total Videos',sub:'All time'},
+          {icon:'🛡️',val:videos.length,label:'Orders Protected',sub:'With video proof'},
+          {icon:'📂',val:driveCount,label:'Drive Uploads',sub:'Google Drive'},
+          {icon:'💾',val:localCount+dlCount,label:'Local Saves',sub:'On your computer'},
         ].map((s,i)=>(
-          <div className="stat-card" key={i}>
-            <div className="stat-icon">{s.icon}</div>
-            <div className="stat-value">{s.val}</div>
-            <div className="stat-label">{s.label}</div>
-            <div className="stat-change">{s.sub}</div>
-          </div>
+          <div className="stat-card" key={i}><div className="stat-icon">{s.icon}</div><div className="stat-value">{s.val}</div><div className="stat-label">{s.label}</div><div className="stat-change">{s.sub}</div></div>
         ))}
       </div>
-
       <div style={{display:'grid',gridTemplateColumns:'2fr 1fr',gap:20,marginBottom:20}}>
         <div className="chart-area">
-          <div className="panel-title" style={{marginBottom:20}}>📅 Recordings This Week</div>
+          <div className="panel-title" style={{marginBottom:20}}>📅 Recordings — Last 7 Days</div>
           <div className="chart-bars">
-            {weekData.map((v,i)=>(
+            {last7.map((d,i)=>(
               <div className="bar-wrap" key={i}>
-                <div className="bar-val">{v}</div>
-                <div className="bar" style={{height:`${(v/maxBar)*140}px`,background:`linear-gradient(180deg,var(--green-light),var(--green-dark))`}}></div>
-                <div className="bar-label">{days[i]}</div>
+                <div className="bar-val">{d.count}</div>
+                <div className="bar" style={{height:`${Math.max(4,(d.count/maxBar)*140)}px`,background:'linear-gradient(180deg,var(--green-light),var(--green-dark))'}}></div>
+                <div className="bar-label">{d.label}</div>
               </div>
             ))}
           </div>
         </div>
         <div className="storage-info">
           <div className="panel-title" style={{marginBottom:16}}>💾 Storage Breakdown</div>
-          {[{label:'Local',size:'4.2 GB',pct:34,color:'var(--green)'},
-            {label:'Google Drive',size:'5.1 GB',pct:41,color:'var(--blue)'},
-            {label:'Cloud (S3)',size:'3.1 GB',pct:25,color:'var(--amber)'}].map((s,i)=>(
+          {[{l:'Google Drive',n:driveCount,col:'var(--blue)'},{l:'Local Folder',n:localCount,col:'var(--green)'},{l:'Downloaded',n:dlCount,col:'var(--amber)'}].map((s,i)=>(
             <div key={i} style={{marginBottom:14}}>
-              <div style={{display:'flex',justifyContent:'space-between',fontSize:13,marginBottom:5}}>
-                <span style={{fontWeight:600}}>{s.label}</span>
-                <span style={{color:'var(--text2)'}}>{s.size}</span>
-              </div>
-              <div className="progress-bar">
-                <div className="progress-fill" style={{width:s.pct+'%',background:s.color}}></div>
-              </div>
+              <div style={{display:'flex',justifyContent:'space-between',fontSize:13,marginBottom:5}}><span style={{fontWeight:600}}>{s.l}</span><span style={{color:'var(--text2)'}}>{s.n} videos</span></div>
+              <div className="progress-bar"><div className="progress-fill" style={{width:videos.length?`${(s.n/Math.max(videos.length,1))*100}%`:'0%',background:s.col}}></div></div>
             </div>
           ))}
-          <div style={{marginTop:16,padding:'12px',background:'var(--bg3)',borderRadius:9,fontSize:13}}>
-            <div style={{display:'flex',justifyContent:'space-between'}}>
-              <span style={{color:'var(--text2)'}}>Total Used</span>
-              <span style={{fontWeight:700}}>12.4 / 50 GB</span>
-            </div>
-          </div>
         </div>
       </div>
-
       <div className="table-wrap">
-        <div className="table-header"><span className="table-title">Dispute Protection Log</span></div>
-        <table>
-          <thead><tr><th>Order ID</th><th>Claim Type</th><th>Date</th><th>Outcome</th><th>Value</th></tr></thead>
-          <tbody>
-            {[
-              {oid:'ORD-2024-000891',type:'Fake Return',date:'2025-03-10',out:'Won',val:'₹4,500'},
-              {oid:'ORD-2024-000754',type:'RTO Fraud',date:'2025-03-05',out:'Won',val:'₹2,200'},
-              {oid:'ORD-2024-000621',type:'Courier Dispute',date:'2025-02-28',out:'Resolved',val:'₹1,800'},
-              {oid:'ORD-2024-000543',type:'Item Not Shipped',date:'2025-02-20',out:'Won',val:'₹6,750'},
-            ].map((r,i)=>(
-              <tr key={i}>
-                <td className="mono" style={{color:'var(--green-light)'}}>{r.oid}</td>
-                <td>{r.type}</td>
-                <td style={{color:'var(--text2)'}}>{r.date}</td>
-                <td><span className="badge badge-green">{r.out}</span></td>
-                <td style={{fontWeight:700,color:'var(--green-light)'}}>{r.val}</td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
+        <div className="table-header"><span className="table-title">All Recordings</span></div>
+        {videos.length===0
+          ? <div className="empty-state"><div className="empty-icon">📊</div><div className="empty-text">No recordings yet</div></div>
+          : <table><thead><tr><th>Order ID</th><th>AWB</th><th>Date</th><th>Duration</th><th>Storage</th></tr></thead>
+            <tbody>{videos.slice(0,20).map(v=>(
+              <tr key={v.id}><td className="mono" style={{color:'var(--green-light)'}}>{v.orderId}</td><td className="mono">{v.awb}</td><td style={{color:'var(--text2)'}}>{v.date}</td><td>{v.duration}</td><td><span className="chip chip-green">{v.storage}</span></td></tr>
+            ))}</tbody></table>}
       </div>
     </div>
   );
 }
 
-// ============ PLANS PAGE ============
-function PlansPage({ user, toast }) {
+// ============================================================
+// PLANS PAGE — Real Razorpay
+// ============================================================
+function PlansPage({ user, toast, onUpgrade }) {
+  const [loading, setLoading] = useState(null);
+
+  const handleBuy = (plan) => {
+    if (user.plan === plan.id) { toast('You are already on this plan','info'); return; }
+    if (!window.Razorpay) { toast('Razorpay is loading, please try again in a moment','error'); return; }
+    setLoading(plan.id);
+    const options = {
+      key: RAZORPAY_KEY,
+      amount: plan.price * 100,
+      currency: 'INR',
+      name: 'Zeespares VMS',
+      description: `${plan.name} Plan — ₹${plan.price}/month`,
+      handler: (response) => {
+        toast(`Payment successful! ID: ${response.razorpay_payment_id}`,'success');
+        onUpgrade(plan.id);
+        setLoading(null);
+      },
+      prefill: { name: user.name, email: user.email },
+      notes: { plan: plan.id },
+      theme: { color: '#0A8A61' },
+      modal: { ondismiss: () => setLoading(null) }
+    };
+    const rzp = new window.Razorpay(options);
+    rzp.on('payment.failed', r => { toast(`Payment failed: ${r.error.description}`,'error'); setLoading(null); });
+    rzp.open();
+  };
+
   return (
     <div>
       <div style={{textAlign:'center',marginBottom:32}}>
         <div style={{fontSize:28,fontWeight:800,marginBottom:8,letterSpacing:-0.5}}>Choose Your Plan</div>
-        <div style={{color:'var(--text2)',fontSize:15}}>Protect every order. Scale as you grow.</div>
+        <div style={{color:'var(--text2)',fontSize:15}}>Protect every order. No more fake return losses.</div>
       </div>
       <div className="plans-grid">
-        {PLANS.map(p => (
+        {PLANS_CONFIG.map(p=>(
           <div key={p.id} className={`plan-card${p.popular?' popular':''}`}>
-            {p.popular && <div className="plan-popular-badge">MOST POPULAR</div>}
+            {p.popular&&<div className="plan-popular-badge">MOST POPULAR</div>}
             <div className="plan-name" style={{color:p.color}}>{p.name}</div>
             <div className="plan-price">
-              {p.price===0 ? 'Free' : <><sup>{p.currency}</sup>{p.price.toLocaleString('en-IN')}<span>/mo</span></>}
+              {p.price===0?<>Free<span style={{display:'block',fontSize:14,fontWeight:500,color:'var(--text2)',marginTop:2}}>7 days trial</span></>
+                :<><sup>{p.currency}</sup>{p.price.toLocaleString('en-IN')}<span>/mo</span></>}
             </div>
             <div className="plan-desc">{p.desc}</div>
             <ul className="plan-features">
               {p.features.map((f,i)=>(
-                <li key={i}>
-                  <span className={f.startsWith('✓')||!f.startsWith('✗')?'feat-check':'feat-x'}>
-                    {f.startsWith('✓')||f.startsWith('✗')?f[0]:'✓'}
-                  </span>
-                  <span>{f.replace(/^[✓✗]\s*/,'')}</span>
-                </li>
+                <li key={i}><span className={f.startsWith('✓')||!f.startsWith('✗')?'feat-check':'feat-x'}>{f.startsWith('✓')||f.startsWith('✗')?f[0]:'✓'}</span><span>{f.replace(/^[✓✗]\s*/,'')}</span></li>
               ))}
             </ul>
             {user.plan===p.id
-              ? <button className="btn btn-secondary" style={{width:'100%'}} disabled>Current Plan</button>
+              ? <button className="btn btn-secondary" style={{width:'100%'}} disabled>✓ Current Plan</button>
               : p.price===0
-                ? <button className="btn btn-secondary" style={{width:'100%'}} onClick={()=>toast('Downgraded to Free plan','success')}>Downgrade</button>
-                : <button className="btn btn-primary" style={{background:p.color,width:'100%'}}
-                    onClick={()=>toast(`Opening Razorpay for ${p.name} ₹${p.price}/mo...`,'success')}>
-                    💳 Subscribe with Razorpay
+                ? <button className="btn btn-secondary" style={{width:'100%'}} disabled>Trial Active on Signup</button>
+                : <button className="btn btn-primary" style={{background:p.color,width:'100%',opacity:loading===p.id?0.7:1}}
+                    onClick={()=>handleBuy(p)} disabled={!!loading}>
+                    {loading===p.id?'Opening payment...`':'💳 Subscribe — ₹'+p.price+'/mo'}
                   </button>}
           </div>
         ))}
       </div>
-      <div style={{marginTop:28,background:'var(--bg2)',border:'1px solid var(--border)',borderRadius:'var(--radius-lg)',padding:'22px 28px'}}>
-        <div style={{display:'flex',alignItems:'center',gap:12,marginBottom:16}}>
+      <div style={{marginTop:28,background:'var(--bg2)',border:'1px solid var(--border)',borderRadius:18,padding:'22px 28px'}}>
+        <div style={{display:'flex',alignItems:'center',gap:12,marginBottom:14}}>
           <span style={{fontSize:22}}>💳</span>
-          <div>
-            <div style={{fontWeight:700,fontSize:15}}>Razorpay Integration</div>
-            <div style={{fontSize:13,color:'var(--text2)'}}>Secure payments powered by Razorpay — supports UPI, cards, net banking, wallets</div>
-          </div>
+          <div><div style={{fontWeight:700,fontSize:15}}>Powered by Razorpay</div><div style={{fontSize:13,color:'var(--text2)'}}>100% secure · PCI DSS compliant · Trusted by 8M+ businesses in India</div></div>
         </div>
         <div style={{display:'flex',gap:10,flexWrap:'wrap'}}>
-          {['UPI / PhonePe','Credit / Debit Card','Net Banking','Paytm Wallet','EMI Options'].map(m=>(
-            <span key={m} className="chip chip-green">{m}</span>
+          {['UPI / GPay / PhonePe','Credit Card','Debit Card','Net Banking','Paytm','EMI'].map(m=><span key={m} className="chip chip-green">{m}</span>)}
+        </div>
+      </div>
+      <div style={{marginTop:16,background:'var(--bg2)',border:'1px solid var(--border)',borderRadius:18,padding:'22px 28px'}}>
+        <div style={{fontWeight:700,fontSize:15,marginBottom:12}}>💡 Why sellers need Zeespares VMS</div>
+        <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:12}}>
+          {[['🚫 Fake Returns','Customer claims wrong item sent — video proves what was packed'],
+            ['📦 RTO Fraud','Courier marks delivered but customer denies — video is proof'],
+            ['⚖️ Marketplace Disputes','Amazon/Flipkart disputes resolved faster with video evidence'],
+            ['💰 Save Money','Average seller saves ₹5,000-20,000/month in fake claims']].map(([t,d],i)=>(
+            <div key={i} style={{padding:'12px 14px',background:'var(--bg3)',borderRadius:9}}>
+              <div style={{fontWeight:700,fontSize:13,marginBottom:4}}>{t}</div>
+              <div style={{fontSize:12,color:'var(--text2)',lineHeight:1.5}}>{d}</div>
+            </div>
           ))}
         </div>
       </div>
@@ -1401,133 +1208,117 @@ function PlansPage({ user, toast }) {
   );
 }
 
-// ============ ADMIN PAGE ============
+// ============================================================
+// ADMIN PAGE
+// ============================================================
 function AdminPage({ toast }) {
-  const users = [
-    {name:'Rahul Sharma',email:'rahul@shop.com',plan:'pro',videos:124,joined:'2025-01-15',status:'active'},
-    {name:'Priya Mehta',email:'priya@store.in',plan:'premium',videos:341,joined:'2025-02-03',status:'active'},
-    {name:'Arjun Nair',email:'arjun@ecom.com',plan:'free',videos:8,joined:'2025-03-10',status:'active'},
-    {name:'Sneha Patel',email:'sneha@deals.in',plan:'pro',videos:67,joined:'2025-01-28',status:'suspended'},
-  ];
+  const allUsers = Object.values(DB.getUsers());
   return (
     <div>
       <div className="stats-grid" style={{marginBottom:24}}>
-        {[{icon:'👥',val:'234',label:'Total Users',sub:'+12 this month'},
-          {icon:'💰',val:'₹2.8L',label:'MRR',sub:'+18% vs last month'},
-          {icon:'📹',val:'18,421',label:'Videos Recorded',sub:'All users'},
-          {icon:'☁️',val:'847 GB',label:'Total Storage',sub:'Across all plans'}
+        {[{icon:'👥',val:allUsers.length,label:'Total Users',sub:'Registered accounts'},
+          {icon:'💰',val:`₹${allUsers.filter(u=>u.plan==='pro').length*999 + allUsers.filter(u=>u.plan==='business').length*2499}`,label:'MRR',sub:'Monthly recurring'},
+          {icon:'📹',val:allUsers.reduce((s,u)=>s+(u.videoCount||0),0),label:'Total Videos',sub:'All users'},
+          {icon:'🆓',val:allUsers.filter(u=>u.plan==='trial').length,label:'On Trial',sub:'Need conversion'},
         ].map((s,i)=>(
-          <div className="stat-card" key={i}>
-            <div className="stat-icon">{s.icon}</div>
-            <div className="stat-value">{s.val}</div>
-            <div className="stat-label">{s.label}</div>
-            <div className="stat-change">{s.sub}</div>
-          </div>
+          <div className="stat-card" key={i}><div className="stat-icon">{s.icon}</div><div className="stat-value">{s.val}</div><div className="stat-label">{s.label}</div><div className="stat-change">{s.sub}</div></div>
         ))}
       </div>
       <div className="table-wrap">
-        <div className="table-header">
-          <span className="table-title">All Users</span>
-          <button className="btn btn-secondary btn-sm" onClick={()=>toast('Exported as CSV','success')}>Export CSV</button>
-        </div>
-        <table>
-          <thead><tr><th>User</th><th>Plan</th><th>Videos</th><th>Joined</th><th>Status</th><th>Actions</th></tr></thead>
-          <tbody>
-            {users.map((u,i)=>(
+        <div className="table-header"><span className="table-title">Registered Users ({allUsers.length})</span></div>
+        {allUsers.length===0
+          ? <div className="empty-state"><div className="empty-icon">👥</div><div className="empty-text">No users yet</div></div>
+          : <table><thead><tr><th>Name</th><th>Email</th><th>Plan</th><th>Videos</th><th>Joined</th></tr></thead>
+            <tbody>{allUsers.map((u,i)=>(
               <tr key={i}>
-                <td><div style={{fontWeight:600}}>{u.name}</div><div style={{fontSize:12,color:'var(--text2)'}}>{u.email}</div></td>
-                <td><span className={`badge ${u.plan==='premium'?'badge-amber':u.plan==='pro'?'badge-green':'badge-blue'}`}>{u.plan.toUpperCase()}</span></td>
-                <td className="mono">{u.videos}</td>
-                <td style={{color:'var(--text2)'}}>{u.joined}</td>
-                <td><span className={`badge ${u.status==='active'?'badge-green':'badge-red'}`}>{u.status}</span></td>
-                <td>
-                  <div style={{display:'flex',gap:6}}>
-                    <button className="btn btn-secondary btn-sm" onClick={()=>toast(`Viewing ${u.name}`,'success')}>View</button>
-                    <button className="btn btn-danger btn-sm" onClick={()=>toast(`${u.name} suspended`,'error')}>Suspend</button>
-                  </div>
-                </td>
+                <td style={{fontWeight:600}}>{u.name}</td>
+                <td style={{fontSize:12,color:'var(--text2)'}}>{u.email}</td>
+                <td><span className={`badge ${u.plan==='business'?'badge-amber':u.plan==='pro'?'badge-green':'badge-blue'}`}>{u.plan.toUpperCase()}</span></td>
+                <td className="mono">{u.videoCount||0}</td>
+                <td style={{color:'var(--text2)'}}>{new Date(u.createdAt).toLocaleDateString('en-IN')}</td>
               </tr>
-            ))}
-          </tbody>
-        </table>
+            ))}</tbody></table>}
       </div>
     </div>
   );
 }
 
-// ============ MAIN APP ============
+// ============================================================
+// MAIN APP
+// ============================================================
 function App() {
-  const [user,       setUser]       = useState(null);
+  const [user,       setUser]       = useState(()=>DB.getSession());
   const [page,       setPage]       = useState('dashboard');
   const [toastData,  setToastData]  = useState(null);
-  const [driveToken, setDriveToken] = useState(sessionStorage.getItem('drive_token') || '');
-  const [driveEmail, setDriveEmail] = useState(sessionStorage.getItem('drive_email') || '');
-  const [userPlan,   setUserPlan]   = useState('pro');
+  const [driveToken, setDriveToken] = useState(()=>sessionStorage.getItem('drive_token')||'');
+  const [driveEmail, setDriveEmail] = useState(()=>sessionStorage.getItem('drive_email')||'');
 
-  const toast = (msg, type='success') => setToastData({ msg, type, key: Date.now() });
+  const toast = (msg, type='success') => setToastData({msg, type, key:Date.now()});
 
-  // ── Load Razorpay script ──────────────────────────────────────────────
-  useEffect(() => {
-    if (!document.getElementById('razorpay-script')) {
-      const s = document.createElement('script');
-      s.id = 'razorpay-script';
-      s.src = 'https://checkout.razorpay.com/v1/checkout.js';
-      s.async = true;
+  // Load Razorpay
+  useEffect(()=>{
+    if(!document.getElementById('rzp-script')){
+      const s=document.createElement('script'); s.id='rzp-script';
+      s.src='https://checkout.razorpay.com/v1/checkout.js'; s.async=true;
       document.head.appendChild(s);
     }
-  }, []);
+  },[]);
 
-  // ── Google OAuth ──────────────────────────────────────────────────────
+  // Handle Google OAuth callback
+  useEffect(()=>{
+    const hash=window.location.hash;
+    if(hash&&hash.includes('access_token')){
+      const p=new URLSearchParams(hash.substring(1));
+      const token=p.get('access_token');
+      if(token){
+        fetch('https://www.googleapis.com/oauth2/v2/userinfo',{headers:{Authorization:`Bearer ${token}`}})
+          .then(r=>r.json()).then(info=>{
+            setDriveToken(token); setDriveEmail(info.email||'');
+            sessionStorage.setItem('drive_token',token);
+            sessionStorage.setItem('drive_email',info.email||'');
+            toast(`Google Drive connected: ${info.email}`,'success');
+          }).catch(()=>{ setDriveToken(token); sessionStorage.setItem('drive_token',token); toast('Google Drive connected!','success'); });
+        window.history.replaceState({},document.title,window.location.pathname);
+      }
+    }
+  },[]);
+
   const connectDrive = () => {
-    const params = new URLSearchParams({
-      client_id: GOOGLE_CLIENT_ID,
-      redirect_uri: window.location.origin + window.location.pathname,
-      response_type: 'token',
-      scope: GOOGLE_SCOPES,
-      include_granted_scopes: 'true',
-      state: 'drive_connect'
-    });
-    window.location.href = `https://accounts.google.com/o/oauth2/v2/auth?${params}`;
+    const params=new URLSearchParams({client_id:GOOGLE_CLIENT_ID,redirect_uri:window.location.origin+window.location.pathname,response_type:'token',scope:GOOGLE_SCOPES,state:'drive'});
+    window.location.href=`https://accounts.google.com/o/oauth2/v2/auth?${params}`;
   };
 
   const disconnectDrive = () => {
     setDriveToken(''); setDriveEmail('');
-    sessionStorage.removeItem('drive_token');
-    sessionStorage.removeItem('drive_email');
-    sessionStorage.removeItem('drive_folder_id');
-    toast('Google Drive disconnected', 'success');
+    sessionStorage.removeItem('drive_token'); sessionStorage.removeItem('drive_email'); sessionStorage.removeItem('drive_folder_id');
+    toast('Google Drive disconnected','success');
   };
 
-  // ── Handle OAuth callback (token in URL hash) ─────────────────────────
-  useEffect(() => {
-    const hash = window.location.hash;
-    if (hash && hash.includes('access_token')) {
-      const params = new URLSearchParams(hash.substring(1));
-      const token = params.get('access_token');
-      if (token) {
-        // Fetch user email from Google
-        fetch('https://www.googleapis.com/oauth2/v2/userinfo', {
-          headers: { Authorization: `Bearer ${token}` }
-        }).then(r => r.json()).then(info => {
-          setDriveToken(token);
-          setDriveEmail(info.email || 'Google Account');
-          sessionStorage.setItem('drive_token', token);
-          sessionStorage.setItem('drive_email', info.email || '');
-          toast(`Google Drive connected: ${info.email}`, 'success');
-        }).catch(() => {
-          setDriveToken(token);
-          sessionStorage.setItem('drive_token', token);
-          toast('Google Drive connected!', 'success');
-        });
-        // Clean URL
-        window.history.replaceState({}, document.title, window.location.pathname);
-      }
+  const handleVideoSaved = (newVid) => {
+    const users=DB.getUsers();
+    if(users[user.email]){
+      users[user.email].videoCount=(users[user.email].videoCount||0)+1;
+      DB.saveUsers(users);
+      setUser(prev=>{const u={...prev,videoCount:(prev.videoCount||0)+1}; DB.saveSession(u); return u;});
     }
-  }, []);
+  };
 
-  const currentUser = user ? { ...user, plan: userPlan } : null;
+  const handleUpgrade = (planId) => {
+    const users=DB.getUsers();
+    if(users[user.email]){ users[user.email].plan=planId; DB.saveUsers(users); }
+    const updated={...user,plan:planId};
+    setUser(updated); DB.saveSession(updated);
+    setPage('dashboard');
+  };
 
-  const navItems = currentUser?.role === 'admin' ? [
+  const handleLogin = (u) => { setUser(u); setPage('dashboard'); };
+
+  const handleLogout = () => { DB.clearSession(); setUser(null); setPage('dashboard'); };
+
+  if(!user) return <AuthPage onLogin={handleLogin}/>;
+
+  const isAdmin = user.role==='admin';
+  const navItems = isAdmin ? [
     {id:'dashboard',icon:'🏠',label:'Dashboard'},
     {id:'admin',icon:'👑',label:'Admin Panel'},
     {id:'analytics',icon:'📊',label:'Analytics'},
@@ -1541,12 +1332,8 @@ function App() {
     {id:'plans',icon:'💎',label:'Upgrade'},
   ];
 
-  const pageTitle = {
-    dashboard:'Dashboard',record:'Record Video',videos:'My Videos',
-    analytics:'Analytics',settings:'Settings',plans:'Plans & Pricing',admin:'Admin Panel'
-  };
-
-  if (!currentUser) return <AuthPage onLogin={(u) => { setUser(u); setUserPlan(u.plan||'pro'); setPage('dashboard'); }} />;
+  const titles={dashboard:'Dashboard',record:'Record Video',videos:'My Videos',analytics:'Analytics',settings:'Settings',plans:'Plans & Pricing',admin:'Admin Panel'};
+  const planCfg=PLANS_CONFIG.find(p=>p.id===user.plan)||PLANS_CONFIG[0];
 
   return (
     <div className="app">
@@ -1560,59 +1347,53 @@ function App() {
             <div className="nav-section-title">Navigation</div>
             {navItems.map(n=>(
               <div key={n.id} className={`nav-item${page===n.id?' active':''}`} onClick={()=>setPage(n.id)}>
-                <span className="nav-icon">{n.icon}</span>
-                <span>{n.label}</span>
-                {n.id==='plans'&&userPlan==='free'&&<span className="badge badge-amber" style={{fontSize:10,padding:'2px 6px',marginLeft:'auto'}}>↑</span>}
+                <span className="nav-icon">{n.icon}</span><span>{n.label}</span>
+                {n.id==='plans'&&user.plan==='trial'&&<span className="badge badge-amber" style={{fontSize:10,padding:'2px 6px',marginLeft:'auto'}}>Trial</span>}
               </div>
             ))}
           </div>
-          {/* Drive status in sidebar */}
-          <div style={{margin:'8px 10px 0',padding:'10px 12px',background:driveToken?'rgba(30,144,255,0.1)':'var(--surface)',borderRadius:9,border:`1px solid ${driveToken?'rgba(30,144,255,0.3)':'var(--border)'}`}}>
-            <div style={{fontSize:11,fontWeight:700,color:driveToken?'var(--blue)':'var(--text3)',marginBottom:2}}>
-              {driveToken?'📂 Drive Connected':'📂 Drive'}
-            </div>
-            <div style={{fontSize:10,color:'var(--text3)'}}>{driveToken?driveEmail:'Not connected'}</div>
-          </div>
+          {driveToken&&<div style={{margin:'8px 10px 0',padding:'10px 12px',background:'rgba(30,144,255,0.1)',borderRadius:9,border:'1px solid rgba(30,144,255,0.3)'}}>
+            <div style={{fontSize:11,fontWeight:700,color:'var(--blue)',marginBottom:2}}>📂 Drive Connected</div>
+            <div style={{fontSize:10,color:'var(--text3)',whiteSpace:'nowrap',overflow:'hidden',textOverflow:'ellipsis'}}>{driveEmail}</div>
+          </div>}
         </div>
         <div className="sidebar-bottom">
           <div className="user-pill" onClick={()=>setPage('settings')}>
-            <div className="user-avatar">{currentUser.name[0].toUpperCase()}</div>
-            <div><div className="user-name">{currentUser.name.split(' ')[0]}</div><div className="user-plan">{userPlan.toUpperCase()} PLAN</div></div>
+            <div className="user-avatar">{user.name[0].toUpperCase()}</div>
+            <div><div className="user-name">{user.name.split(' ')[0]}</div><div className="user-plan">{planCfg.name.toUpperCase()}</div></div>
           </div>
-          <button className="btn btn-ghost" style={{width:'100%',marginTop:8,fontSize:12,color:'var(--text3)'}} onClick={()=>setUser(null)}>Sign Out</button>
+          <button className="btn btn-ghost" style={{width:'100%',marginTop:8,fontSize:12,color:'var(--text3)'}} onClick={handleLogout}>Sign Out</button>
         </div>
       </div>
 
       <div className="main">
         <div className="topbar">
           <div>
-            <div className="topbar-title">{pageTitle[page]}</div>
+            <div className="topbar-title">{titles[page]}</div>
             <div style={{fontSize:12,color:'var(--text3)',marginTop:2}}>{new Date().toLocaleDateString('en-IN',{weekday:'long',year:'numeric',month:'long',day:'numeric'})}</div>
           </div>
           <div className="topbar-actions">
-            {driveToken && <span className="badge badge-blue">📂 Drive</span>}
-            <span className={`badge ${userPlan==='premium'?'badge-amber':userPlan==='pro'?'badge-green':'badge-blue'}`}>{userPlan.toUpperCase()}</span>
-            {currentUser.role==='admin' && <span className="badge badge-red">ADMIN</span>}
-            <button className="btn btn-secondary btn-sm" onClick={()=>toast('All clear ✓','success')}>🔔</button>
+            {driveToken&&<span className="badge badge-blue">📂 Drive</span>}
+            <span className={`badge ${user.plan==='business'?'badge-amber':user.plan==='pro'?'badge-green':'badge-blue'}`}>{planCfg.name.toUpperCase()}</span>
+            {isAdmin&&<span className="badge badge-red">ADMIN</span>}
           </div>
         </div>
         <div className="content">
-          {page==='dashboard'  && <Dashboard user={currentUser} navigate={setPage} />}
-          {page==='record'     && <RecordingPage user={currentUser} toast={toast} driveToken={driveToken} driveEmail={driveEmail} />}
-          {page==='videos'     && <VideosPage toast={toast} />}
-          {page==='analytics'  && <AnalyticsPage />}
-          {page==='settings'   && <SettingsPage user={currentUser} toast={toast} driveToken={driveToken} driveEmail={driveEmail} onDriveConnect={connectDrive} onDriveDisconnect={disconnectDrive} />}
-          {page==='plans'      && <PlansPage user={currentUser} toast={toast} onUpgrade={(p)=>{setUserPlan(p);toast(`Plan updated to ${p.toUpperCase()}!`,'success');}} />}
-          {page==='admin'      && <AdminPage toast={toast} />}
+          {page==='dashboard' && <Dashboard user={user} navigate={setPage}/>}
+          {page==='record'    && <RecordingPage user={user} toast={toast} driveToken={driveToken} driveEmail={driveEmail} onVideoSaved={handleVideoSaved}/>}
+          {page==='videos'    && <VideosPage user={user} toast={toast}/>}
+          {page==='analytics' && <AnalyticsPage user={user}/>}
+          {page==='settings'  && <SettingsPage user={user} toast={toast} driveToken={driveToken} driveEmail={driveEmail} onDriveConnect={connectDrive} onDriveDisconnect={disconnectDrive}/>}
+          {page==='plans'     && <PlansPage user={user} toast={toast} onUpgrade={handleUpgrade}/>}
+          {page==='admin'     && <AdminPage toast={toast}/>}
         </div>
       </div>
-
-      {toastData && <Toast key={toastData.key} msg={toastData.msg} type={toastData.type} onClose={()=>setToastData(null)} />}
+      {toastData&&<Toast key={toastData.key} msg={toastData.msg} type={toastData.type} onClose={()=>setToastData(null)}/>}
     </div>
   );
 }
 
-ReactDOM.render(<App />, document.getElementById('root'));
+ReactDOM.render(<App/>, document.getElementById('root'));
 </script>
 </body>
 </html>
