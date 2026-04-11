@@ -3,846 +3,720 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Zeespares VMS — Video Management System</title>
+<title>OpenVMS — Packing Video Management System</title>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/react/18.2.0/umd/react.production.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.2.0/umd/react-dom.production.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/babel-standalone/7.23.5/babel.min.js"></script>
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=Sora:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
 <style>
-  :root {
-    --green: #0A8A61;
-    --green-light: #0fb578;
-    --green-dark: #076b4b;
-    --green-glow: rgba(10,138,97,0.18);
-    --bg: #080e0c;
-    --bg2: #0d1714;
-    --bg3: #111e1a;
-    --surface: #152820;
-    --surface2: #1a3028;
-    --border: rgba(10,138,97,0.2);
-    --border2: rgba(10,138,97,0.35);
-    --text: #e8f5f0;
-    --text2: #9dbfb5;
-    --text3: #5a8a7c;
-    --red: #ff4757;
-    --amber: #ffa502;
-    --blue: #1e90ff;
-    --radius: 12px;
-    --radius-lg: 18px;
-  }
-  * { margin:0; padding:0; box-sizing:border-box; }
-  html,body,#root { height:100%; background:var(--bg); color:var(--text); font-family:'Sora',sans-serif; }
-  ::-webkit-scrollbar { width:4px; }
-  ::-webkit-scrollbar-track { background:transparent; }
-  ::-webkit-scrollbar-thumb { background:var(--green-dark); border-radius:4px; }
+/* ── Reset ── */
+*{margin:0;padding:0;box-sizing:border-box;}
+html,body,#root{height:100%;font-family:'Inter',sans-serif;background:#f0f2f5;color:#1a1a2e;}
+::-webkit-scrollbar{width:5px;height:5px;}
+::-webkit-scrollbar-track{background:#f0f2f5;}
+::-webkit-scrollbar-thumb{background:#c5cad6;border-radius:4px;}
 
-  /* AUTH */
-  .auth-wrap { min-height:100vh; display:flex; align-items:center; justify-content:center;
-    background: radial-gradient(ellipse 80% 60% at 50% 0%, rgba(10,138,97,0.12) 0%, transparent 70%), var(--bg); }
-  .auth-card { width:440px; background:var(--bg2); border:1px solid var(--border2); border-radius:var(--radius-lg);
-    padding:44px 40px; box-shadow:0 32px 80px rgba(0,0,0,0.5), 0 0 0 1px rgba(10,138,97,0.08); }
-  .auth-logo { display:flex; align-items:center; gap:12px; margin-bottom:32px; }
-  .auth-logo-icon { width:44px; height:44px; background:var(--green); border-radius:10px;
-    display:flex; align-items:center; justify-content:center; font-size:22px; }
-  .auth-logo-text { font-size:20px; font-weight:700; letter-spacing:-0.3px; }
-  .auth-logo-sub { font-size:11px; color:var(--text3); letter-spacing:1px; text-transform:uppercase; }
-  .auth-title { font-size:26px; font-weight:700; margin-bottom:6px; letter-spacing:-0.5px; }
-  .auth-sub { color:var(--text2); font-size:14px; margin-bottom:28px; }
-  .form-group { margin-bottom:18px; }
-  .form-label { display:block; font-size:12px; font-weight:600; color:var(--text2); margin-bottom:8px; letter-spacing:0.5px; text-transform:uppercase; }
-  .form-input { width:100%; background:var(--bg3); border:1px solid var(--border2); border-radius:var(--radius);
-    padding:12px 16px; color:var(--text); font-family:'Sora',sans-serif; font-size:14px; outline:none; transition:all .2s; }
-  .form-input:focus { border-color:var(--green); box-shadow:0 0 0 3px var(--green-glow); }
-  .form-input::placeholder { color:var(--text3); }
-  .form-select { appearance:none; cursor:pointer; }
-  .btn { display:inline-flex; align-items:center; justify-content:center; gap:8px;
-    padding:12px 20px; border-radius:var(--radius); border:none; cursor:pointer;
-    font-family:'Sora',sans-serif; font-size:14px; font-weight:600; transition:all .18s; }
-  .btn-primary { background:var(--green); color:#fff; width:100%; padding:14px; font-size:15px; }
-  .btn-primary:hover { background:var(--green-light); transform:translateY(-1px); box-shadow:0 8px 24px rgba(10,138,97,0.35); }
-  .btn-primary:active { transform:translateY(0); }
-  .btn-secondary { background:var(--surface2); color:var(--text); border:1px solid var(--border2); }
-  .btn-secondary:hover { background:var(--surface); border-color:var(--green); }
-  .btn-danger { background:rgba(255,71,87,0.15); color:var(--red); border:1px solid rgba(255,71,87,0.3); }
-  .btn-danger:hover { background:rgba(255,71,87,0.25); }
-  .btn-sm { padding:8px 14px; font-size:12px; }
-  .btn-ghost { background:transparent; color:var(--text2); }
-  .btn-ghost:hover { color:var(--text); background:var(--surface); }
-  .auth-switch { text-align:center; margin-top:22px; font-size:13px; color:var(--text2); }
-  .auth-link { color:var(--green-light); cursor:pointer; font-weight:600; }
-  .auth-link:hover { text-decoration:underline; }
+/* ── Variables ── */
+:root{
+  --sidebar-bg:#1a1a2e;
+  --sidebar-w:220px;
+  --accent:#2874f0;
+  --accent-dark:#1a5fd4;
+  --accent-light:#e8f0fe;
+  --success:#27ae60;
+  --warning:#f39c12;
+  --danger:#e74c3c;
+  --text:#1a1a2e;
+  --text2:#5a6072;
+  --text3:#8b95a9;
+  --border:#e2e5ed;
+  --bg:#f0f2f5;
+  --white:#ffffff;
+  --row-hover:#f5f8ff;
+  --radius:6px;
+  --shadow:0 1px 4px rgba(0,0,0,0.1);
+  --shadow-md:0 4px 16px rgba(0,0,0,0.12);
+}
 
-  /* LAYOUT */
-  .app { display:flex; height:100vh; overflow:hidden; }
-  .sidebar { width:240px; background:var(--bg2); border-right:1px solid var(--border);
-    display:flex; flex-direction:column; flex-shrink:0; }
-  .sidebar-logo { padding:22px 20px 18px; border-bottom:1px solid var(--border); display:flex; align-items:center; gap:10px; }
-  .logo-badge { width:36px; height:36px; background:var(--green); border-radius:8px;
-    display:flex; align-items:center; justify-content:center; font-size:18px; flex-shrink:0; }
-  .logo-name { font-size:15px; font-weight:700; line-height:1.2; }
-  .logo-tag { font-size:10px; color:var(--green-light); font-weight:600; letter-spacing:0.5px; }
-  .sidebar-nav { flex:1; padding:14px 10px; overflow-y:auto; }
-  .nav-section { margin-bottom:22px; }
-  .nav-section-title { font-size:10px; color:var(--text3); font-weight:700; letter-spacing:1.5px; text-transform:uppercase; padding:0 10px 8px; }
-  .nav-item { display:flex; align-items:center; gap:10px; padding:9px 12px; border-radius:9px;
-    cursor:pointer; color:var(--text2); font-size:13.5px; font-weight:500; transition:all .15s; margin-bottom:2px; }
-  .nav-item:hover { background:var(--surface); color:var(--text); }
-  .nav-item.active { background:var(--green-glow); color:var(--green-light); border:1px solid rgba(10,138,97,0.25); }
-  .nav-icon { font-size:16px; width:20px; text-align:center; }
-  .sidebar-bottom { padding:14px; border-top:1px solid var(--border); }
-  .user-pill { display:flex; align-items:center; gap:10px; padding:10px 12px;
-    background:var(--surface); border-radius:10px; cursor:pointer; }
-  .user-avatar { width:32px; height:32px; background:var(--green-dark); border-radius:50%;
-    display:flex; align-items:center; justify-content:center; font-weight:700; font-size:13px; color:#fff; flex-shrink:0; }
-  .user-name { font-size:13px; font-weight:600; }
-  .user-plan { font-size:11px; color:var(--green-light); font-weight:600; }
+/* ── AUTH ── */
+.auth-page{min-height:100vh;display:flex;align-items:center;justify-content:center;
+  background:linear-gradient(135deg,#1a1a2e 0%,#16213e 50%,#0f3460 100%);}
+.auth-box{background:#fff;border-radius:12px;padding:40px;width:420px;box-shadow:0 20px 60px rgba(0,0,0,0.3);}
+.auth-brand{display:flex;align-items:center;gap:10px;margin-bottom:28px;}
+.auth-brand-icon{width:40px;height:40px;background:var(--accent);border-radius:8px;display:flex;align-items:center;justify-content:center;color:#fff;font-weight:800;font-size:18px;}
+.auth-brand-name{font-size:20px;font-weight:700;color:var(--text);}
+.auth-brand-sub{font-size:11px;color:var(--text3);letter-spacing:.5px;text-transform:uppercase;}
+.auth-title{font-size:22px;font-weight:700;margin-bottom:4px;}
+.auth-sub{font-size:13px;color:var(--text2);margin-bottom:24px;}
+.f-label{display:block;font-size:12px;font-weight:600;color:var(--text2);margin-bottom:6px;text-transform:uppercase;letter-spacing:.4px;}
+.f-input{width:100%;border:1.5px solid var(--border);border-radius:var(--radius);padding:10px 14px;font-family:'Inter',sans-serif;font-size:14px;color:var(--text);outline:none;transition:border .15s;background:#fff;}
+.f-input:focus{border-color:var(--accent);box-shadow:0 0 0 3px rgba(40,116,240,.1);}
+.f-group{margin-bottom:16px;}
+.auth-btn{width:100%;padding:12px;background:var(--accent);color:#fff;border:none;border-radius:var(--radius);font-family:'Inter',sans-serif;font-size:15px;font-weight:600;cursor:pointer;transition:background .15s;}
+.auth-btn:hover{background:var(--accent-dark);}
+.auth-btn:disabled{opacity:.6;cursor:not-allowed;}
+.auth-err{background:#fef2f2;border:1px solid #fecaca;border-radius:var(--radius);padding:10px 14px;font-size:13px;color:var(--danger);margin-bottom:14px;}
+.auth-switch{text-align:center;margin-top:18px;font-size:13px;color:var(--text2);}
+.auth-link{color:var(--accent);cursor:pointer;font-weight:600;}
+.auth-link:hover{text-decoration:underline;}
+.trial-note{margin-top:14px;padding:10px 14px;background:#eff6ff;border:1px solid #bfdbfe;border-radius:var(--radius);font-size:12px;color:#1d4ed8;text-align:center;}
 
-  .main { flex:1; display:flex; flex-direction:column; overflow:hidden; }
-  .topbar { padding:16px 28px; border-bottom:1px solid var(--border); display:flex; align-items:center; justify-content:space-between;
-    background:var(--bg2); }
-  .topbar-title { font-size:18px; font-weight:700; }
-  .topbar-actions { display:flex; align-items:center; gap:10px; }
-  .badge { display:inline-flex; align-items:center; padding:4px 10px; border-radius:20px; font-size:11px; font-weight:700; letter-spacing:0.3px; }
-  .badge-green { background:rgba(10,138,97,0.2); color:var(--green-light); border:1px solid rgba(10,138,97,0.3); }
-  .badge-red { background:rgba(255,71,87,0.15); color:var(--red); border:1px solid rgba(255,71,87,0.3); }
-  .badge-amber { background:rgba(255,165,2,0.15); color:var(--amber); border:1px solid rgba(255,165,2,0.3); }
-  .badge-blue { background:rgba(30,144,255,0.15); color:var(--blue); border:1px solid rgba(30,144,255,0.3); }
+/* ── LAYOUT ── */
+.app-shell{display:flex;height:100vh;overflow:hidden;}
 
-  .content { flex:1; overflow-y:auto; padding:28px; }
+/* ── SIDEBAR ── */
+.sidebar{width:var(--sidebar-w);background:var(--sidebar-bg);display:flex;flex-direction:column;flex-shrink:0;overflow-y:auto;}
+.sb-brand{padding:18px 16px;border-bottom:1px solid rgba(255,255,255,.08);display:flex;align-items:center;gap:10px;}
+.sb-brand-icon{width:34px;height:34px;background:var(--accent);border-radius:7px;display:flex;align-items:center;justify-content:center;color:#fff;font-weight:800;font-size:16px;flex-shrink:0;}
+.sb-brand-text{font-size:15px;font-weight:700;color:#fff;line-height:1.2;}
+.sb-brand-sub{font-size:10px;color:rgba(255,255,255,.4);letter-spacing:.5px;}
+.sb-nav{flex:1;padding:12px 0;}
+.sb-section-title{font-size:10px;color:rgba(255,255,255,.3);font-weight:700;letter-spacing:1.5px;text-transform:uppercase;padding:10px 16px 4px;}
+.sb-item{display:flex;align-items:center;gap:10px;padding:9px 16px;cursor:pointer;color:rgba(255,255,255,.6);font-size:13px;font-weight:500;transition:all .15s;border-left:3px solid transparent;position:relative;}
+.sb-item:hover{background:rgba(255,255,255,.05);color:#fff;}
+.sb-item.active{background:rgba(40,116,240,.2);color:#fff;border-left-color:var(--accent);}
+.sb-item-icon{font-size:15px;width:18px;text-align:center;flex-shrink:0;}
+.sb-sub{padding-left:12px;}
+.sb-sub .sb-item{font-size:12.5px;padding:7px 16px;}
+.sb-divider{height:1px;background:rgba(255,255,255,.07);margin:8px 16px;}
+.sb-footer{padding:12px 16px;border-top:1px solid rgba(255,255,255,.08);}
+.sb-user{display:flex;align-items:center;gap:9px;padding:8px 10px;border-radius:var(--radius);cursor:pointer;transition:background .15s;}
+.sb-user:hover{background:rgba(255,255,255,.05);}
+.sb-avatar{width:30px;height:30px;background:var(--accent);border-radius:50%;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:12px;color:#fff;flex-shrink:0;}
+.sb-uname{font-size:13px;font-weight:600;color:#fff;}
+.sb-uplan{font-size:10px;color:rgba(255,255,255,.4);}
+.sb-logout{width:100%;margin-top:6px;padding:7px;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.1);border-radius:var(--radius);color:rgba(255,255,255,.5);font-size:12px;cursor:pointer;font-family:'Inter',sans-serif;transition:all .15s;}
+.sb-logout:hover{background:rgba(255,255,255,.1);color:#fff;}
 
-  /* RECORDING PAGE */
-  .record-grid { display:grid; grid-template-columns:340px 1fr; gap:20px; height:100%; }
-  .panel { background:var(--bg2); border:1px solid var(--border); border-radius:var(--radius-lg); padding:22px; }
-  .panel-title { font-size:14px; font-weight:700; color:var(--text2); text-transform:uppercase; letter-spacing:1px; margin-bottom:18px; display:flex; align-items:center; gap:8px; }
+/* ── MAIN ── */
+.main-area{flex:1;display:flex;flex-direction:column;overflow:hidden;}
+.topbar{background:#fff;border-bottom:1px solid var(--border);padding:0 24px;height:52px;display:flex;align-items:center;justify-content:space-between;flex-shrink:0;box-shadow:var(--shadow);}
+.topbar-left{display:flex;align-items:center;gap:8px;}
+.topbar-title{font-size:15px;font-weight:600;color:var(--text);}
+.topbar-breadcrumb{font-size:12px;color:var(--text3);}
+.topbar-sep{color:var(--text3);font-size:12px;}
+.topbar-right{display:flex;align-items:center;gap:8px;}
+.content-area{flex:1;overflow-y:auto;padding:20px 24px;}
 
-  .scan-field { margin-bottom:16px; }
-  .scan-label { font-size:11px; font-weight:700; color:var(--text3); text-transform:uppercase; letter-spacing:1px; margin-bottom:8px; display:flex; align-items:center; justify-content:space-between; }
-  .scan-input-wrap { position:relative; }
-  .scan-input { width:100%; background:var(--bg3); border:2px solid var(--border2); border-radius:var(--radius);
-    padding:13px 16px 13px 42px; color:var(--text); font-family:'JetBrains Mono',monospace; font-size:14px; outline:none; transition:all .2s; }
-  .scan-input:focus { border-color:var(--green); box-shadow:0 0 0 3px var(--green-glow); }
-  .scan-input.active { border-color:var(--green-light); background:rgba(10,138,97,0.06); }
-  .scan-input.done { border-color:rgba(10,138,97,0.5); }
-  .scan-icon { position:absolute; left:13px; top:50%; transform:translateY(-50%); font-size:16px; color:var(--text3); }
-  .scan-check { position:absolute; right:13px; top:50%; transform:translateY(-50%); font-size:16px; color:var(--green-light); }
+/* ── PAGE HEADER ── */
+.page-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;}
+.page-title{font-size:17px;font-weight:700;color:var(--text);}
+.page-sub{font-size:12px;color:var(--text3);margin-top:2px;}
 
-  .status-card { background:var(--bg3); border:1px solid var(--border); border-radius:var(--radius); padding:14px 16px; margin-bottom:16px; }
-  .status-row { display:flex; align-items:center; justify-content:space-between; font-size:13px; }
-  .status-label { color:var(--text2); }
-  .status-value { font-family:'JetBrains Mono',monospace; font-weight:600; font-size:13px; }
+/* ── CARDS ── */
+.card{background:#fff;border:1px solid var(--border);border-radius:var(--radius);box-shadow:var(--shadow);}
+.card-header{padding:14px 18px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;}
+.card-title{font-size:13px;font-weight:700;color:var(--text);text-transform:uppercase;letter-spacing:.5px;}
+.card-body{padding:18px;}
 
-  .rec-btn { width:100%; padding:15px; border-radius:var(--radius); border:none; cursor:pointer;
-    font-family:'Sora',sans-serif; font-size:15px; font-weight:700; transition:all .18s; margin-bottom:10px; display:flex; align-items:center; justify-content:center; gap:10px; }
-  .rec-btn-start { background:linear-gradient(135deg, var(--green), var(--green-light)); color:#fff; }
-  .rec-btn-start:hover { transform:translateY(-2px); box-shadow:0 12px 30px rgba(10,138,97,0.4); }
-  .rec-btn-stop { background:linear-gradient(135deg, #ff4757, #ff6b81); color:#fff; }
-  .rec-btn-stop:hover { transform:translateY(-2px); box-shadow:0 12px 30px rgba(255,71,87,0.35); }
-  .rec-btn:disabled { opacity:0.4; cursor:not-allowed; transform:none !important; }
+/* ── STATS ── */
+.stats-row{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-bottom:18px;}
+.stat-box{background:#fff;border:1px solid var(--border);border-radius:var(--radius);padding:16px 18px;box-shadow:var(--shadow);}
+.stat-box-top{display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:10px;}
+.stat-icon-box{width:36px;height:36px;border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:16px;}
+.stat-val{font-size:26px;font-weight:700;color:var(--text);letter-spacing:-1px;}
+.stat-lbl{font-size:12px;color:var(--text2);margin-top:2px;}
+.stat-change{font-size:11px;font-weight:600;margin-top:4px;}
 
-  .video-panel { position:relative; background:#000; border-radius:var(--radius-lg); overflow:hidden;
-    border:1px solid var(--border); aspect-ratio:16/9; }
-  .video-panel video { width:100%; height:100%; object-fit:cover; }
-  .video-overlay { position:absolute; top:0; left:0; right:0; bottom:0; pointer-events:none; }
-  .rec-indicator { position:absolute; top:14px; left:14px; display:flex; align-items:center; gap:7px;
-    background:rgba(0,0,0,0.7); border-radius:20px; padding:6px 12px; backdrop-filter:blur(8px); }
-  .rec-dot { width:9px; height:9px; border-radius:50%; background:var(--red); animation:pulse 1s infinite; }
-  @keyframes pulse { 0%,100%{opacity:1;transform:scale(1)} 50%{opacity:0.4;transform:scale(0.8)} }
-  .rec-text { font-size:12px; font-weight:700; color:#fff; letter-spacing:1px; }
-  .rec-timer { position:absolute; top:14px; right:14px; background:rgba(0,0,0,0.7); border-radius:20px;
-    padding:6px 14px; font-family:'JetBrains Mono',monospace; font-size:14px; font-weight:600; color:#fff; backdrop-filter:blur(8px); }
-  .video-placeholder { width:100%; height:100%; display:flex; flex-direction:column; align-items:center; justify-content:center;
-    color:var(--text3); background:var(--bg3); gap:14px; }
-  .video-placeholder-icon { font-size:52px; opacity:0.4; }
-  .video-placeholder-text { font-size:14px; font-weight:500; }
+/* ── FILTER BAR ── */
+.filter-bar{background:#fff;border:1px solid var(--border);border-radius:var(--radius);padding:14px 18px;margin-bottom:14px;box-shadow:var(--shadow);}
+.filter-row{display:flex;align-items:flex-end;gap:14px;flex-wrap:wrap;}
+.filter-group{display:flex;flex-direction:column;gap:5px;}
+.filter-label{font-size:11px;font-weight:600;color:var(--text3);text-transform:uppercase;letter-spacing:.4px;}
+.filter-input{border:1px solid var(--border);border-radius:var(--radius);padding:7px 12px;font-family:'Inter',sans-serif;font-size:13px;color:var(--text);outline:none;background:#fff;height:34px;}
+.filter-input:focus{border-color:var(--accent);box-shadow:0 0 0 2px rgba(40,116,240,.1);}
+.filter-select{appearance:none;cursor:pointer;min-width:160px;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%238b95a9' d='M6 8L1 3h10z'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 10px center;padding-right:28px;}
+.filter-actions{display:flex;gap:8px;margin-left:auto;}
 
-  .ts-overlay { position:absolute; bottom:14px; left:14px; background:rgba(0,0,0,0.6);
-    padding:4px 10px; border-radius:6px; font-family:'JetBrains Mono',monospace; font-size:11px; color:rgba(255,255,255,0.8); }
+/* ── BUTTONS ── */
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:6px;padding:7px 16px;border-radius:var(--radius);border:1px solid transparent;cursor:pointer;font-family:'Inter',sans-serif;font-size:13px;font-weight:500;transition:all .15s;white-space:nowrap;}
+.btn-primary{background:var(--accent);color:#fff;border-color:var(--accent);}
+.btn-primary:hover{background:var(--accent-dark);}
+.btn-primary:disabled{opacity:.5;cursor:not-allowed;}
+.btn-outline{background:#fff;color:var(--text2);border-color:var(--border);}
+.btn-outline:hover{border-color:var(--accent);color:var(--accent);}
+.btn-danger{background:#fef2f2;color:var(--danger);border-color:#fecaca;}
+.btn-danger:hover{background:#fee2e2;}
+.btn-success{background:#f0fdf4;color:var(--success);border-color:#bbf7d0;}
+.btn-success:hover{background:#dcfce7;}
+.btn-sm{padding:5px 12px;font-size:12px;}
+.btn-preview{background:var(--accent-light);color:var(--accent);border-color:#bfdbfe;font-size:12px;padding:4px 12px;}
+.btn-preview:hover{background:var(--accent);color:#fff;}
+.btn-rec{background:#dc2626;color:#fff;border-color:#dc2626;padding:10px 24px;font-size:14px;font-weight:600;}
+.btn-rec:hover{background:#b91c1c;}
+.btn-stop{background:#fff;color:#dc2626;border-color:#dc2626;padding:10px 24px;font-size:14px;font-weight:600;}
+.btn-stop:hover{background:#fef2f2;}
 
-  /* DASHBOARD */
-  .stats-grid { display:grid; grid-template-columns:repeat(4,1fr); gap:16px; margin-bottom:24px; }
-  .stat-card { background:var(--bg2); border:1px solid var(--border); border-radius:var(--radius-lg); padding:20px 22px;
-    position:relative; overflow:hidden; }
-  .stat-card::before { content:''; position:absolute; top:0; right:0; width:80px; height:80px;
-    background:radial-gradient(circle at top right, var(--green-glow), transparent); }
-  .stat-icon { font-size:22px; margin-bottom:12px; }
-  .stat-value { font-size:28px; font-weight:800; margin-bottom:4px; letter-spacing:-1px; }
-  .stat-label { font-size:12px; color:var(--text2); font-weight:500; }
-  .stat-change { font-size:11px; color:var(--green-light); margin-top:4px; font-weight:600; }
+/* ── TABLE ── */
+.table-card{background:#fff;border:1px solid var(--border);border-radius:var(--radius);box-shadow:var(--shadow);overflow:hidden;}
+.table-card-header{padding:12px 18px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;background:#fafbfc;}
+.table-card-title{font-size:13px;font-weight:700;color:var(--text);}
+.tbl{width:100%;border-collapse:collapse;}
+.tbl thead tr{background:#fafbfc;}
+.tbl th{padding:10px 16px;text-align:left;font-size:11.5px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:.5px;border-bottom:1px solid var(--border);white-space:nowrap;}
+.tbl td{padding:11px 16px;font-size:13px;color:var(--text);border-bottom:1px solid #f0f2f5;vertical-align:middle;}
+.tbl tbody tr:hover td{background:var(--row-hover);}
+.tbl tbody tr:last-child td{border-bottom:none;}
+.tbl-mono{font-family:'JetBrains Mono',monospace;font-size:12.5px;}
+.tbl-id{font-family:'JetBrains Mono',monospace;font-size:13px;color:var(--accent);font-weight:500;}
 
-  /* TABLE */
-  .table-wrap { background:var(--bg2); border:1px solid var(--border); border-radius:var(--radius-lg); overflow:hidden; }
-  .table-header { padding:18px 22px; border-bottom:1px solid var(--border); display:flex; align-items:center; justify-content:space-between; }
-  .table-title { font-size:15px; font-weight:700; }
-  .search-wrap { position:relative; }
-  .search-input { background:var(--bg3); border:1px solid var(--border2); border-radius:9px;
-    padding:9px 14px 9px 36px; color:var(--text); font-family:'Sora',sans-serif; font-size:13px; outline:none; width:220px; transition:all .2s; }
-  .search-input:focus { border-color:var(--green); box-shadow:0 0 0 2px var(--green-glow); }
-  .search-icon { position:absolute; left:11px; top:50%; transform:translateY(-50%); color:var(--text3); font-size:14px; }
-  table { width:100%; border-collapse:collapse; }
-  th { padding:10px 22px; text-align:left; font-size:11px; font-weight:700; color:var(--text3); text-transform:uppercase; letter-spacing:1px; border-bottom:1px solid var(--border); }
-  td { padding:14px 22px; font-size:13.5px; border-bottom:1px solid rgba(10,138,97,0.08); vertical-align:middle; }
-  tr:last-child td { border-bottom:none; }
-  tr:hover td { background:var(--surface); }
-  .mono { font-family:'JetBrains Mono',monospace; font-size:13px; }
-  .thumb { width:52px; height:36px; background:var(--bg3); border-radius:6px; object-fit:cover;
-    display:flex; align-items:center; justify-content:center; font-size:18px; color:var(--text3); flex-shrink:0; overflow:hidden; }
+/* ── BADGES / CHIPS ── */
+.chip{display:inline-flex;align-items:center;gap:4px;padding:3px 9px;border-radius:20px;font-size:11px;font-weight:600;}
+.chip-success{background:#f0fdf4;color:#15803d;border:1px solid #bbf7d0;}
+.chip-blue{background:#eff6ff;color:#1d4ed8;border:1px solid #bfdbfe;}
+.chip-warning{background:#fffbeb;color:#b45309;border:1px solid #fde68a;}
+.chip-danger{background:#fef2f2;color:#dc2626;border:1px solid #fecaca;}
+.chip-gray{background:#f8fafc;color:#64748b;border:1px solid #e2e8f0;}
+.dot{width:7px;height:7px;border-radius:50%;display:inline-block;flex-shrink:0;}
+.dot-success{background:#22c55e;}
+.dot-blue{background:var(--accent);}
+.dot-red{background:#ef4444;animation:blink 1s infinite;}
+@keyframes blink{0%,100%{opacity:1;}50%{opacity:.3;}}
 
-  /* SETTINGS */
-  .settings-grid { display:grid; grid-template-columns:1fr 1fr; gap:20px; }
-  .settings-section { background:var(--bg2); border:1px solid var(--border); border-radius:var(--radius-lg); padding:24px; }
-  .settings-title { font-size:15px; font-weight:700; margin-bottom:18px; display:flex; align-items:center; gap:8px; }
-  .setting-row { display:flex; align-items:center; justify-content:space-between; padding:14px 0; border-bottom:1px solid var(--border); }
-  .setting-row:last-child { border-bottom:none; }
-  .setting-info { flex:1; }
-  .setting-name { font-size:13.5px; font-weight:600; margin-bottom:3px; }
-  .setting-desc { font-size:12px; color:var(--text2); }
-  .toggle { position:relative; width:46px; height:26px; flex-shrink:0; }
-  .toggle input { opacity:0; width:0; height:0; }
-  .toggle-slider { position:absolute; inset:0; background:var(--bg3); border:1px solid var(--border2);
-    border-radius:26px; cursor:pointer; transition:.2s; }
-  .toggle-slider::before { content:''; position:absolute; height:18px; width:18px; left:3px; bottom:3px;
-    background:var(--text3); border-radius:50%; transition:.2s; }
-  input:checked + .toggle-slider { background:var(--green); border-color:var(--green); }
-  input:checked + .toggle-slider::before { transform:translateX(20px); background:#fff; }
+/* ── PAGINATION ── */
+.pagination{display:flex;align-items:center;justify-content:space-between;padding:12px 18px;border-top:1px solid var(--border);font-size:12px;color:var(--text2);}
+.page-btns{display:flex;align-items:center;gap:4px;}
+.page-btn{width:28px;height:28px;border:1px solid var(--border);border-radius:4px;background:#fff;cursor:pointer;font-size:12px;color:var(--text2);display:flex;align-items:center;justify-content:center;transition:all .15s;}
+.page-btn:hover{border-color:var(--accent);color:var(--accent);}
+.page-btn.active{background:var(--accent);color:#fff;border-color:var(--accent);}
+.page-btn:disabled{opacity:.4;cursor:not-allowed;}
+.per-page{display:flex;align-items:center;gap:6px;}
+.per-page select{border:1px solid var(--border);border-radius:4px;padding:3px 8px;font-size:12px;outline:none;}
 
-  .storage-option { border:2px solid var(--border); border-radius:var(--radius); padding:14px 16px;
-    cursor:pointer; transition:all .15s; margin-bottom:10px; display:flex; align-items:flex-start; gap:12px; }
-  .storage-option.selected { border-color:var(--green); background:rgba(10,138,97,0.06); }
-  .storage-option-radio { width:18px; height:18px; border-radius:50%; border:2px solid var(--border2);
-    flex-shrink:0; margin-top:2px; display:flex; align-items:center; justify-content:center; transition:.15s; }
-  .storage-option.selected .storage-option-radio { border-color:var(--green); background:var(--green); }
-  .storage-option.selected .storage-option-radio::after { content:''; width:6px; height:6px; background:#fff; border-radius:50%; }
-  .storage-option-title { font-size:13.5px; font-weight:700; margin-bottom:3px; }
-  .storage-option-desc { font-size:12px; color:var(--text2); }
+/* ── RECORD PAGE ── */
+.rec-layout{display:grid;grid-template-columns:380px 1fr;gap:16px;align-items:start;}
+.scan-card{background:#fff;border:1px solid var(--border);border-radius:var(--radius);box-shadow:var(--shadow);}
+.scan-card-header{padding:12px 16px;border-bottom:1px solid var(--border);background:#fafbfc;display:flex;align-items:center;gap:8px;}
+.scan-card-title{font-size:13px;font-weight:700;color:var(--text);}
+.scan-card-body{padding:16px;}
+.scan-field-wrap{margin-bottom:14px;}
+.scan-field-label{font-size:11px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:.5px;margin-bottom:6px;display:flex;align-items:center;justify-content:space-between;}
+.scan-input-box{position:relative;}
+.scan-input{width:100%;border:2px solid var(--border);border-radius:var(--radius);padding:10px 38px 10px 38px;font-family:'JetBrains Mono',monospace;font-size:14px;color:var(--text);outline:none;transition:all .2s;background:#fff;}
+.scan-input:focus{border-color:var(--accent);box-shadow:0 0 0 3px rgba(40,116,240,.1);}
+.scan-input.filled{border-color:#22c55e;background:#f0fdf4;}
+.scan-input.active-scan{border-color:#f59e0b;background:#fffbeb;animation:scanpulse 1.5s infinite;}
+@keyframes scanpulse{0%,100%{box-shadow:0 0 0 0 rgba(245,158,11,.3);}50%{box-shadow:0 0 0 5px rgba(245,158,11,0);}}
+.scan-pre-icon{position:absolute;left:11px;top:50%;transform:translateY(-50%);font-size:15px;color:var(--text3);}
+.scan-suf{position:absolute;right:11px;top:50%;transform:translateY(-50%);color:#22c55e;font-weight:700;font-size:16px;}
+.scan-hint{font-size:11px;color:var(--text3);margin-top:5px;}
+.status-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:14px;}
+.status-item{background:#f8fafc;border:1px solid var(--border);border-radius:var(--radius);padding:10px 12px;}
+.status-item-label{font-size:10px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:.5px;margin-bottom:4px;}
+.status-item-val{font-size:16px;font-weight:700;color:var(--text);}
+.rec-status-bar{padding:10px 14px;border-radius:var(--radius);margin-bottom:14px;display:flex;align-items:center;gap:10px;font-size:13px;font-weight:600;}
+.rsb-idle{background:#f8fafc;border:1px solid var(--border);color:var(--text2);}
+.rsb-recording{background:#fef2f2;border:1px solid #fecaca;color:#dc2626;}
+.rsb-saving{background:#fffbeb;border:1px solid #fde68a;color:#b45309;}
+.video-frame{background:#0f172a;border-radius:var(--radius);overflow:hidden;border:1px solid var(--border);aspect-ratio:16/9;position:relative;box-shadow:var(--shadow-md);}
+.video-frame video{width:100%;height:100%;object-fit:cover;display:block;}
+.video-placeholder{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;color:rgba(255,255,255,.3);}
+.video-placeholder-icon{font-size:48px;opacity:.3;}
+.video-placeholder-text{font-size:13px;}
+.video-overlay-badge{position:absolute;display:flex;align-items:center;gap:6px;background:rgba(0,0,0,.7);border-radius:4px;padding:5px 10px;backdrop-filter:blur(4px);}
+.vob-rec{top:12px;left:12px;}
+.vob-timer{top:12px;right:12px;font-family:'JetBrains Mono',monospace;font-size:14px;font-weight:700;color:#fff;}
+.vob-ts{bottom:12px;left:12px;font-family:'JetBrains Mono',monospace;font-size:11px;color:rgba(255,255,255,.75);}
+.vob-id{bottom:12px;right:12px;font-family:'JetBrains Mono',monospace;font-size:11px;color:rgba(255,255,255,.75);}
+.folder-bar{display:flex;align-items:center;justify-content:space-between;padding:10px 14px;border-radius:var(--radius);margin-bottom:14px;border:1px solid var(--border);background:#fff;font-size:12px;}
+.recent-grid{display:flex;gap:10px;overflow-x:auto;padding-bottom:4px;margin-top:12px;}
+.recent-item{flex-shrink:0;width:120px;border:1px solid var(--border);border-radius:var(--radius);padding:10px;background:#fff;text-align:center;}
+.recent-thumb{font-size:24px;margin-bottom:6px;}
+.recent-id{font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--accent);font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin-bottom:3px;}
+.recent-meta{font-size:10px;color:var(--text3);}
 
-  /* PLANS */
-  .plans-grid { display:grid; grid-template-columns:repeat(3,1fr); gap:20px; }
-  .plan-card { background:var(--bg2); border:1px solid var(--border); border-radius:var(--radius-lg); padding:28px 24px;
-    position:relative; overflow:hidden; }
-  .plan-card.popular { border-color:var(--green); box-shadow:0 0 40px rgba(10,138,97,0.15); }
-  .plan-popular-badge { position:absolute; top:0; right:0; background:var(--green); color:#fff;
-    font-size:10px; font-weight:800; padding:5px 12px; border-radius:0 var(--radius-lg) 0 var(--radius); letter-spacing:1px; }
-  .plan-name { font-size:16px; font-weight:700; margin-bottom:6px; }
-  .plan-price { font-size:34px; font-weight:800; letter-spacing:-1px; margin:12px 0; }
-  .plan-price sup { font-size:18px; font-weight:600; margin-right:2px; vertical-align:super; }
-  .plan-price span { font-size:14px; font-weight:500; color:var(--text2); }
-  .plan-desc { font-size:13px; color:var(--text2); margin-bottom:20px; }
-  .plan-features { list-style:none; margin-bottom:24px; }
-  .plan-features li { display:flex; align-items:center; gap:8px; font-size:13px; padding:7px 0; border-bottom:1px solid rgba(10,138,97,0.08); }
-  .plan-features li:last-child { border-bottom:none; }
-  .feat-check { color:var(--green-light); font-size:14px; }
-  .feat-x { color:var(--text3); font-size:14px; }
+/* ── SETTINGS ── */
+.settings-grid{display:grid;grid-template-columns:1fr 1fr;gap:16px;}
+.setting-row{display:flex;align-items:center;justify-content:space-between;padding:13px 0;border-bottom:1px solid #f0f2f5;}
+.setting-row:last-child{border-bottom:none;}
+.setting-name{font-size:13px;font-weight:600;color:var(--text);}
+.setting-desc{font-size:12px;color:var(--text3);margin-top:2px;}
+.toggle{position:relative;width:42px;height:24px;flex-shrink:0;}
+.toggle input{opacity:0;width:0;height:0;}
+.toggle-slider{position:absolute;inset:0;background:#d1d5db;border-radius:24px;cursor:pointer;transition:.2s;}
+.toggle-slider::before{content:'';position:absolute;height:17px;width:17px;left:3px;bottom:3px;background:#fff;border-radius:50%;transition:.2s;box-shadow:0 1px 3px rgba(0,0,0,.2);}
+input:checked+.toggle-slider{background:var(--accent);}
+input:checked+.toggle-slider::before{transform:translateX(18px);}
 
-  /* ANALYTICS */
-  .analytics-grid { display:grid; grid-template-columns:2fr 1fr; gap:20px; }
-  .chart-area { background:var(--bg2); border:1px solid var(--border); border-radius:var(--radius-lg); padding:22px; }
-  .chart-bars { display:flex; align-items:flex-end; gap:8px; height:160px; padding-top:10px; }
-  .bar-wrap { flex:1; display:flex; flex-direction:column; align-items:center; gap:6px; }
-  .bar { width:100%; border-radius:5px 5px 0 0; transition:all .3s; cursor:pointer; position:relative; min-height:4px; }
-  .bar:hover { opacity:0.85; }
-  .bar-label { font-size:10px; color:var(--text3); font-weight:600; }
-  .bar-val { font-size:11px; color:var(--text2); font-weight:700; }
-  .donut-svg { display:block; }
-  .progress-bar { height:8px; background:var(--bg3); border-radius:8px; overflow:hidden; margin-top:8px; }
-  .progress-fill { height:100%; background:linear-gradient(90deg,var(--green),var(--green-light)); border-radius:8px; transition:width .5s; }
-  .storage-info { background:var(--bg2); border:1px solid var(--border); border-radius:var(--radius-lg); padding:22px; }
+/* ── PLANS ── */
+.plans-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:16px;}
+.plan-box{background:#fff;border:2px solid var(--border);border-radius:10px;padding:24px;position:relative;transition:border .2s;}
+.plan-box.popular{border-color:var(--accent);box-shadow:0 0 0 4px rgba(40,116,240,.08);}
+.plan-popular-tag{position:absolute;top:-1px;right:16px;background:var(--accent);color:#fff;font-size:10px;font-weight:700;padding:3px 10px;border-radius:0 0 6px 6px;letter-spacing:.5px;}
+.plan-name{font-size:15px;font-weight:700;margin-bottom:4px;}
+.plan-price{font-size:30px;font-weight:800;letter-spacing:-1px;margin:10px 0;color:var(--text);}
+.plan-price sup{font-size:16px;vertical-align:super;font-weight:600;}
+.plan-price span{font-size:13px;font-weight:500;color:var(--text2);}
+.plan-desc{font-size:12px;color:var(--text2);margin-bottom:16px;}
+.plan-features{list-style:none;margin-bottom:20px;}
+.plan-features li{display:flex;align-items:flex-start;gap:7px;font-size:12.5px;padding:5px 0;border-bottom:1px solid #f8fafc;line-height:1.4;}
+.plan-features li:last-child{border-bottom:none;}
+.pf-yes{color:var(--success);font-weight:700;flex-shrink:0;}
+.pf-no{color:#d1d5db;font-weight:700;flex-shrink:0;}
 
-  /* NOTIFICATION */
-  .toast { position:fixed; bottom:24px; right:24px; background:var(--surface2); border:1px solid var(--border2);
-    border-radius:var(--radius); padding:14px 18px; display:flex; align-items:center; gap:10px;
-    font-size:13.5px; font-weight:500; box-shadow:0 16px 40px rgba(0,0,0,0.4); z-index:9999;
-    animation:slideIn .3s ease; max-width:320px; }
-  @keyframes slideIn { from{transform:translateX(100%);opacity:0} to{transform:translateX(0);opacity:1} }
+/* ── MODAL ── */
+.modal-backdrop{position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:1000;display:flex;align-items:center;justify-content:center;backdrop-filter:blur(2px);}
+.modal-box{background:#fff;border-radius:10px;padding:28px;width:460px;box-shadow:0 20px 60px rgba(0,0,0,.2);}
+.modal-title{font-size:17px;font-weight:700;margin-bottom:6px;}
+.modal-sub{font-size:13px;color:var(--text2);margin-bottom:20px;}
+.modal-actions{display:flex;gap:8px;justify-content:flex-end;margin-top:20px;}
 
-  /* MISC */
-  .divider { height:1px; background:var(--border); margin:20px 0; }
-  .empty-state { display:flex; flex-direction:column; align-items:center; justify-content:center;
-    padding:60px 20px; color:var(--text2); gap:12px; }
-  .empty-icon { font-size:48px; opacity:0.3; }
-  .empty-text { font-size:14px; }
-  .chip { display:inline-flex; align-items:center; gap:5px; padding:3px 9px; border-radius:20px;
-    font-size:11px; font-weight:700; }
-  .chip-green { background:rgba(10,138,97,0.15); color:var(--green-light); }
-  .chip-red { background:rgba(255,71,87,0.12); color:var(--red); }
-  .chip-amber { background:rgba(255,165,2,0.12); color:var(--amber); }
-  .modal-backdrop { position:fixed; inset:0; background:rgba(0,0,0,0.75); z-index:1000;
-    display:flex; align-items:center; justify-content:center; backdrop-filter:blur(4px); }
-  .modal { background:var(--bg2); border:1px solid var(--border2); border-radius:var(--radius-lg);
-    padding:32px; width:480px; box-shadow:0 32px 80px rgba(0,0,0,0.5); }
-  .modal-title { font-size:20px; font-weight:700; margin-bottom:6px; }
-  .modal-sub { font-size:13px; color:var(--text2); margin-bottom:24px; }
-  .modal-actions { display:flex; gap:10px; margin-top:24px; justify-content:flex-end; }
+/* ── TRIAL BANNER ── */
+.trial-banner{display:flex;align-items:center;justify-content:space-between;padding:10px 16px;border-radius:var(--radius);margin-bottom:16px;font-size:13px;background:#fffbeb;border:1px solid #fde68a;color:#92400e;}
+.trial-banner.expired{background:#fef2f2;border-color:#fecaca;color:#991b1b;}
 
-  @media(max-width:900px){
-    .record-grid { grid-template-columns:1fr; }
-    .stats-grid { grid-template-columns:repeat(2,1fr); }
-    .plans-grid { grid-template-columns:1fr; }
-    .settings-grid { grid-template-columns:1fr; }
-    .sidebar { display:none; }
-  }
+/* ── DRIVE CONNECT CARD ── */
+.drive-card{padding:18px;border-radius:var(--radius);border:1px solid var(--border);background:#fff;}
+.drive-card-connected{border-color:#bbf7d0;background:#f0fdf4;}
+
+/* ── EMPTY STATE ── */
+.empty-state{display:flex;flex-direction:column;align-items:center;justify-content:center;padding:50px 20px;color:var(--text3);}
+.empty-icon{font-size:42px;margin-bottom:10px;opacity:.4;}
+.empty-text{font-size:14px;}
+.empty-sub{font-size:12px;margin-top:4px;}
+
+/* ── TOAST ── */
+.toast{position:fixed;bottom:20px;right:20px;background:#1e293b;color:#fff;border-radius:8px;padding:12px 16px;display:flex;align-items:center;gap:10px;font-size:13px;font-weight:500;box-shadow:0 8px 30px rgba(0,0,0,.3);z-index:9999;max-width:320px;animation:toastIn .25s ease;}
+@keyframes toastIn{from{transform:translateX(110%);opacity:0;}to{transform:translateX(0);opacity:1;}}
+.toast-success{border-left:3px solid #22c55e;}
+.toast-error{border-left:3px solid #ef4444;}
+.toast-info{border-left:3px solid var(--accent);}
+
+/* ── MISC ── */
+.progress-bar{height:7px;background:#e5e7eb;border-radius:7px;overflow:hidden;}
+.progress-fill{height:100%;background:var(--accent);border-radius:7px;transition:width .4s;}
+.divider{height:1px;background:var(--border);margin:16px 0;}
+.text-accent{color:var(--accent);}
+.text-success{color:var(--success);}
+.text-danger{color:var(--danger);}
+.text-warning{color:var(--warning);}
+.text-muted{color:var(--text3);}
+.fw-700{font-weight:700;}
+.font-mono{font-family:'JetBrains Mono',monospace;}
+
+@media(max-width:900px){
+  .sidebar{display:none;}
+  .rec-layout{grid-template-columns:1fr;}
+  .stats-row{grid-template-columns:repeat(2,1fr);}
+  .plans-grid{grid-template-columns:1fr;}
+  .settings-grid{grid-template-columns:1fr;}
+}
 </style>
 </head>
 <body>
 <div id="root"></div>
 <script type="text/babel">
-const { useState, useEffect, useRef, useCallback } = React;
+const {useState,useEffect,useRef,useCallback}=React;
 
-// ============ MOCK DATA ============
-const MOCK_VIDEOS = [
-  { id:1, orderId:'ORD-2024-001234', awb:'AWB7891234560', date:'2025-03-24', duration:'02:14', size:'45MB', status:'saved', storage:'local' },
-  { id:2, orderId:'ORD-2024-001235', awb:'AWB7891234561', date:'2025-03-24', duration:'01:52', size:'38MB', status:'saved', storage:'drive' },
-  { id:3, orderId:'ORD-2024-001236', awb:'AWB7891234562', date:'2025-03-23', duration:'03:07', size:'62MB', status:'saved', storage:'cloud' },
-  { id:4, orderId:'ORD-2024-001237', awb:'AWB7891234563', date:'2025-03-23', duration:'02:45', size:'54MB', status:'saved', storage:'local' },
-  { id:5, orderId:'ORD-2024-001238', awb:'AWB7891234564', date:'2025-03-22', duration:'01:30', size:'29MB', status:'saved', storage:'cloud' },
-  { id:6, orderId:'ORD-2024-001239', awb:'AWB7891234565', date:'2025-03-22', duration:'04:12', size:'83MB', status:'saved', storage:'drive' },
-];
+// ── Config ────────────────────────────────────────────────────────
+const RAZORPAY_KEY    = 'rzp_live_SVpyhNZtOJBGLG';
+const GOOGLE_CLIENT_ID= '801291352828-vsbfrr91qr8pqo03b24slag2tchdf29k.apps.googleusercontent.com';
+const GOOGLE_SCOPES   = 'https://www.googleapis.com/auth/drive.file https://www.googleapis.com/auth/userinfo.email';
+const ADMIN_EMAIL     = 'dskart9953@gmail.com';
 
-const PLANS = [
-  { id:'free', name:'Free', price:0, currency:'₹', period:'/mo', desc:'Perfect for individual sellers', color:'#5a8a7c',
-    features:['Local storage only','10 videos/month','Basic recording','7-day video history','✗ Google Drive','✗ Cloud storage','✗ Analytics'] },
-  { id:'pro', name:'Pro', price:999, currency:'₹', period:'/mo', desc:'For growing businesses', color:'#0A8A61', popular:true,
-    features:['Local + Google Drive','100 videos/month','HD recording','30-day history','✓ Google Drive sync','✗ Cloud storage','Basic analytics'] },
-  { id:'premium', name:'Premium', price:2499, currency:'₹', period:'/mo', desc:'Full-featured protection', color:'#ffa502',
-    features:['All storage modes','Unlimited videos','4K recording','Unlimited history','✓ Google Drive','✓ 50GB Cloud storage','Advanced analytics'] },
-];
-
-// ============ TOAST ============
-
-// ============================================================
-// ZEESPARES VMS v6 — Real Auth + Razorpay + Google Drive
-// ============================================================
-
-const RAZORPAY_KEY   = 'rzp_live_SVpyhNZtOJBGLG';
-const GOOGLE_CLIENT_ID = '801291352828-vsbfrr91qr8pqo03b24slag2tchdf29k.apps.googleusercontent.com';
-const GOOGLE_SCOPES    = 'https://www.googleapis.com/auth/drive.file https://www.googleapis.com/auth/userinfo.email';
-const ADMIN_EMAIL      = 'dskart9953@gmail.com'; // change to your admin email
-
-// ── Local DB helpers (localStorage as simple user store) ──
-const DB = {
-  getUsers: () => JSON.parse(localStorage.getItem('vms_users') || '{}'),
-  saveUsers: (u) => localStorage.setItem('vms_users', JSON.stringify(u)),
-  getSession: () => JSON.parse(localStorage.getItem('vms_session') || 'null'),
-  saveSession: (s) => localStorage.setItem('vms_session', JSON.stringify(s)),
-  clearSession: () => localStorage.removeItem('vms_session'),
-  getVideos: (email) => JSON.parse(localStorage.getItem(`vms_videos_${email}`) || '[]'),
-  saveVideos: (email, v) => localStorage.setItem(`vms_videos_${email}`, JSON.stringify(v)),
+// ── LocalStorage DB ───────────────────────────────────────────────
+const DB={
+  getUsers:()=>JSON.parse(localStorage.getItem('vms_users')||'{}'),
+  saveUsers:u=>localStorage.setItem('vms_users',JSON.stringify(u)),
+  getSession:()=>JSON.parse(localStorage.getItem('vms_session')||'null'),
+  saveSession:s=>localStorage.setItem('vms_session',JSON.stringify(s)),
+  clearSession:()=>localStorage.removeItem('vms_session'),
+  getVideos:e=>JSON.parse(localStorage.getItem(`vms_v_${e}`)||'[]'),
+  saveVideos:(e,v)=>localStorage.setItem(`vms_v_${e}`,JSON.stringify(v)),
 };
 
-// ── Plan config ──────────────────────────────────────────────
-const PLANS_CONFIG = [
-  {
-    id: 'trial',
-    name: 'Free Trial',
-    price: 0,
-    currency: '₹',
-    period: '7 days',
-    desc: 'Try all features free for 7 days',
-    color: '#5a8a7c',
-    trialDays: 7,
-    videoLimit: 100,
-    features: [
-      '✓ 100 videos during trial',
-      '✓ Local folder save',
-      '✓ Auto scan workflow',
-      '✓ Timestamp overlay',
-      '✗ Google Drive sync',
-      '✗ Cloud storage',
-      '✗ Priority support',
-    ]
-  },
-  {
-    id: 'pro',
-    name: 'Pro',
-    price: 999,
-    currency: '₹',
-    period: '/mo',
-    desc: 'Best for active sellers',
-    color: '#0A8A61',
-    popular: true,
-    videoLimit: 500,
-    features: [
-      '✓ 500 videos/month',
-      '✓ Local folder save',
-      '✓ Google Drive sync',
-      '✓ Auto scan workflow',
-      '✓ Timestamp + Order ID overlay',
-      '✓ Email support',
-      '✗ Cloud storage',
-    ]
-  },
-  {
-    id: 'business',
-    name: 'Business',
-    price: 2499,
-    currency: '₹',
-    period: '/mo',
-    desc: 'For high-volume sellers & teams',
-    color: '#ffa502',
-    videoLimit: 99999,
-    features: [
-      '✓ Unlimited videos',
-      '✓ Local + Google Drive + Cloud',
-      '✓ Multi-user access (3 seats)',
-      '✓ Advanced analytics',
-      '✓ Dispute report export (PDF)',
-      '✓ Priority WhatsApp support',
-      '✓ 10GB cloud storage included',
-    ]
-  }
+// ── Plans ─────────────────────────────────────────────────────────
+const PLANS=[
+  {id:'trial',name:'Free Trial',price:0,period:'7 days',desc:'Try everything free',color:'#64748b',videoLimit:100,
+   features:['✓ 100 videos during trial','✓ Local folder save','✓ Auto scan workflow','✓ Barcode scanner support','✗ Google Drive sync','✗ Cloud backup','✗ Priority support']},
+  {id:'pro',name:'Pro',price:999,period:'/mo',desc:'Best for active sellers',color:'#2874f0',popular:true,videoLimit:500,
+   features:['✓ 500 videos / month','✓ Local folder save','✓ Google Drive auto-sync','✓ Timestamp + Order ID overlay','✓ Video search & filter','✓ Email support (24h)','✗ Unlimited videos']},
+  {id:'business',name:'Business',price:2499,period:'/mo',desc:'High volume & teams',color:'#f59e0b',videoLimit:999999,
+   features:['✓ Unlimited videos','✓ Local + Drive + Cloud','✓ 3 operator seats','✓ Dispute report PDF export','✓ Advanced analytics','✓ WhatsApp priority support','✓ 10 GB cloud storage']},
 ];
 
-// ── Mock recent videos for new accounts ─────────────────────
-const EMPTY_STATS = { total:0, thisMonth:0, disputes:0, storageGB:0 };
-
-// ============================================================
-// TOAST
-// ============================================================
-function Toast({ msg, type, onClose }) {
-  useEffect(() => { const t = setTimeout(onClose, 3500); return () => clearTimeout(t); }, []);
-  const cfg = { success:{bg:'var(--surface2)',border:'rgba(10,138,97,0.5)',icon:'✓',col:'var(--green-light)'},
-                error:{bg:'rgba(30,10,10,0.95)',border:'rgba(255,71,87,0.5)',icon:'✗',col:'var(--red)'},
-                info:{bg:'var(--surface2)',border:'rgba(30,144,255,0.4)',icon:'ℹ',col:'var(--blue)'} }[type]||{};
-  return (
-    <div style={{position:'fixed',bottom:24,right:24,background:cfg.bg,border:`1px solid ${cfg.border}`,
-      borderRadius:12,padding:'14px 18px',display:'flex',alignItems:'center',gap:10,
-      fontSize:13.5,fontWeight:500,boxShadow:'0 16px 40px rgba(0,0,0,0.5)',zIndex:9999,
-      maxWidth:340,animation:'slideIn .3s ease'}}>
-      <span style={{color:cfg.col,fontSize:18,fontWeight:800,flexShrink:0}}>{cfg.icon}</span>
+// ── Toast ─────────────────────────────────────────────────────────
+function Toast({msg,type,onClose}){
+  useEffect(()=>{const t=setTimeout(onClose,3500);return()=>clearTimeout(t);},[]);
+  const icon={success:'✓',error:'✗',info:'ℹ'}[type]||'ℹ';
+  return(
+    <div className={`toast toast-${type}`}>
+      <span style={{fontSize:16,fontWeight:800}}>{icon}</span>
       <span>{msg}</span>
     </div>
   );
 }
 
-// ============================================================
-// AUTH PAGE — Real signup/login with localStorage
-// ============================================================
-function AuthPage({ onLogin }) {
-  const [mode,  setMode]  = useState('login');
-  const [form,  setForm]  = useState({ name:'', email:'', password:'', confirmPassword:'' });
-  const [error, setError] = useState('');
-  const [loading, setLoading] = useState(false);
+// ── Auth ──────────────────────────────────────────────────────────
+function AuthPage({onLogin}){
+  const [mode,setMode]=useState('login');
+  const [form,setForm]=useState({name:'',email:'',password:'',confirm:''});
+  const [err,setErr]=useState('');
+  const [loading,setLoading]=useState(false);
 
-  const validate = () => {
-    if (!form.email.trim()) return 'Email is required';
-    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email)) return 'Enter a valid email address';
-    if (!form.password) return 'Password is required';
-    if (form.password.length < 6) return 'Password must be at least 6 characters';
-    if (mode === 'signup') {
-      if (!form.name.trim()) return 'Full name is required';
-      if (form.password !== form.confirmPassword) return 'Passwords do not match';
+  const validate=()=>{
+    if(!form.email.trim()||!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email)) return 'Enter a valid email address';
+    if(!form.password||form.password.length<6) return 'Password must be at least 6 characters';
+    if(mode==='signup'){
+      if(!form.name.trim()) return 'Full name is required';
+      if(form.password!==form.confirm) return 'Passwords do not match';
     }
     return null;
   };
 
-  const handle = () => {
-    const err = validate();
-    if (err) { setError(err); return; }
-    setLoading(true); setError('');
-
-    const users = DB.getUsers();
-
-    if (mode === 'signup') {
-      if (users[form.email]) { setError('This email is already registered. Please sign in.'); setLoading(false); return; }
-      const now = Date.now();
-      const newUser = {
-        name: form.name.trim(),
-        email: form.email.toLowerCase().trim(),
-        password: btoa(form.password), // basic encoding (not production-safe, needs backend for real)
-        role: form.email.toLowerCase() === ADMIN_EMAIL ? 'admin' : 'seller',
-        plan: 'trial',
-        trialStarted: now,
-        trialExpiry: now + (7 * 24 * 60 * 60 * 1000),
-        createdAt: now,
-        videoCount: 0,
-      };
-      users[form.email.toLowerCase()] = newUser;
-      DB.saveUsers(users);
-      DB.saveSession(newUser);
-      setTimeout(() => { setLoading(false); onLogin(newUser); }, 600);
+  const handle=()=>{
+    const e=validate(); if(e){setErr(e);return;}
+    setLoading(true); setErr('');
+    const users=DB.getUsers();
+    if(mode==='signup'){
+      if(users[form.email.toLowerCase()]){setErr('Email already registered. Please sign in.');setLoading(false);return;}
+      const now=Date.now();
+      const u={name:form.name.trim(),email:form.email.toLowerCase(),password:btoa(form.password),
+        role:form.email.toLowerCase()===ADMIN_EMAIL?'admin':'seller',
+        plan:form.email.toLowerCase()===ADMIN_EMAIL.toLowerCase()?'business':'trial',trialStarted:now,trialExpiry:now+(7*86400000),createdAt:now,videoCount:0};
+      users[u.email]=u; DB.saveUsers(users); DB.saveSession(u);
+      setTimeout(()=>{setLoading(false);onLogin(u);},500);
     } else {
-      const u = users[form.email.toLowerCase().trim()];
-      if (!u) { setError('No account found with this email. Please sign up first.'); setLoading(false); return; }
-      if (u.password !== btoa(form.password)) { setError('Incorrect password. Please try again.'); setLoading(false); return; }
+      const u=users[form.email.toLowerCase()];
+      if(!u){setErr('No account found. Please sign up first.');setLoading(false);return;}
+      if(u.password!==btoa(form.password)){setErr('Incorrect password.');setLoading(false);return;}
       DB.saveSession(u);
-      setTimeout(() => { setLoading(false); onLogin(u); }, 400);
+      setTimeout(()=>{setLoading(false);onLogin(u);},400);
     }
   };
 
-  const f = (k,v) => { setForm(p=>({...p,[k]:v})); if(error) setError(''); };
+  const set=(k,v)=>{setForm(p=>({...p,[k]:v}));setErr('');};
 
-  return (
-    <div className="auth-wrap">
-      <div className="auth-card">
-        <div className="auth-logo">
-          <div className="auth-logo-icon">📦</div>
-          <div><div className="auth-logo-text">Zeespares VMS</div><div className="auth-logo-sub">Video Management System</div></div>
-        </div>
-        <div className="auth-title">{mode==='login'?'Welcome back':'Create your account'}</div>
-        <div className="auth-sub">{mode==='login'?'Sign in to your seller dashboard':'Start your 7-day free trial — no card required'}</div>
-
-        {mode==='signup' && (
-          <div className="form-group">
-            <label className="form-label">Full Name</label>
-            <input className="form-input" placeholder="e.g. Rahul Sharma" value={form.name} onChange={e=>f('name',e.target.value)} />
+  return(
+    <div className="auth-page">
+      <div className="auth-box">
+        <div className="auth-brand">
+          <div className="auth-brand-icon">Z</div>
+          <div>
+            <div className="auth-brand-name">OpenVMS</div>
+            <div className="auth-brand-sub">Packing Video Management System</div>
           </div>
-        )}
-        <div className="form-group">
-          <label className="form-label">Email Address</label>
-          <input className="form-input" type="email" placeholder="you@example.com" value={form.email} onChange={e=>f('email',e.target.value)}
-            onKeyDown={e=>e.key==='Enter'&&handle()} />
         </div>
-        <div className="form-group">
-          <label className="form-label">Password</label>
-          <input className="form-input" type="password" placeholder="Minimum 6 characters" value={form.password} onChange={e=>f('password',e.target.value)}
-            onKeyDown={e=>e.key==='Enter'&&handle()} />
-        </div>
-        {mode==='signup' && (
-          <div className="form-group">
-            <label className="form-label">Confirm Password</label>
-            <input className="form-input" type="password" placeholder="Re-enter password" value={form.confirmPassword} onChange={e=>f('confirmPassword',e.target.value)}
-              onKeyDown={e=>e.key==='Enter'&&handle()} />
-          </div>
-        )}
-
-        {error && (
-          <div style={{background:'rgba(255,71,87,0.1)',border:'1px solid rgba(255,71,87,0.3)',borderRadius:9,
-            padding:'10px 14px',marginBottom:14,fontSize:13,color:'var(--red)',fontWeight:500}}>
-            ⚠️ {error}
-          </div>
-        )}
-
-        <button className="btn btn-primary" onClick={handle} disabled={loading} style={{opacity:loading?0.7:1}}>
-          {loading ? 'Please wait...' : mode==='login' ? 'Sign In →' : 'Start Free Trial →'}
-        </button>
-
-        {mode==='signup' && (
-          <div style={{marginTop:14,padding:'12px',background:'rgba(10,138,97,0.08)',borderRadius:9,border:'1px solid rgba(10,138,97,0.2)',fontSize:12,color:'var(--text2)'}}>
-            🎉 <strong style={{color:'var(--green-light)'}}>7 days free</strong> — 100 videos included. No credit card needed.
-          </div>
-        )}
-
-        <div className="auth-switch">
-          {mode==='login'
-            ? <>Don't have an account? <span className="auth-link" onClick={()=>{setMode('signup');setError('');}}>Sign up free</span></>
-            : <>Already have an account? <span className="auth-link" onClick={()=>{setMode('login');setError('');}}>Sign in</span></>}
-        </div>
+        <div className="auth-title">{mode==='login'?'Sign in to your account':'Create your account'}</div>
+        <div className="auth-sub">{mode==='login'?'Enter your credentials to continue':'Start your 7-day free trial — no card required'}</div>
+        {mode==='signup'&&<div className="f-group"><label className="f-label">Full Name</label><input className="f-input" placeholder="e.g. Rahul Sharma" value={form.name} onChange={e=>set('name',e.target.value)}/></div>}
+        <div className="f-group"><label className="f-label">Email Address</label><input className="f-input" type="email" placeholder="you@example.com" value={form.email} onChange={e=>set('email',e.target.value)} onKeyDown={e=>e.key==='Enter'&&handle()}/></div>
+        <div className="f-group"><label className="f-label">Password</label><input className="f-input" type="password" placeholder="Min 6 characters" value={form.password} onChange={e=>set('password',e.target.value)} onKeyDown={e=>e.key==='Enter'&&handle()}/></div>
+        {mode==='signup'&&<div className="f-group"><label className="f-label">Confirm Password</label><input className="f-input" type="password" placeholder="Re-enter password" value={form.confirm} onChange={e=>set('confirm',e.target.value)} onKeyDown={e=>e.key==='Enter'&&handle()}/></div>}
+        {err&&<div className="auth-err">⚠ {err}</div>}
+        <button className="auth-btn" onClick={handle} disabled={loading}>{loading?'Please wait...':(mode==='login'?'Sign In':'Start Free Trial')}</button>
+        {mode==='signup'&&<div className="trial-note">🎉 7 days free · 100 videos included · No credit card needed</div>}
+        <div className="auth-switch">{mode==='login'?<>No account? <span className="auth-link" onClick={()=>{setMode('signup');setErr('');}}>Sign up free</span></>:<>Have an account? <span className="auth-link" onClick={()=>{setMode('login');setErr('');}}>Sign in</span></>}</div>
       </div>
     </div>
   );
 }
 
-// ============================================================
-// TRIAL BANNER
-// ============================================================
-function TrialBanner({ user, navigate }) {
-  if (user.plan !== 'trial') return null;
-  const daysLeft = Math.max(0, Math.ceil((user.trialExpiry - Date.now()) / (1000*60*60*24)));
-  const expired  = daysLeft === 0;
-  return (
-    <div style={{
-      background: expired ? 'rgba(255,71,87,0.1)' : 'rgba(255,165,2,0.08)',
-      border: `1px solid ${expired?'rgba(255,71,87,0.4)':'rgba(255,165,2,0.35)'}`,
-      borderRadius:10, padding:'10px 18px', marginBottom:16,
-      display:'flex', alignItems:'center', justifyContent:'space-between', gap:10, flexWrap:'wrap'
-    }}>
-      <div style={{display:'flex',alignItems:'center',gap:8}}>
-        <span style={{fontSize:16}}>{expired?'🔴':'⏳'}</span>
-        <span style={{fontSize:13,color:expired?'var(--red)':'var(--amber)',fontWeight:600}}>
-          {expired ? 'Your free trial has expired — upgrade to continue recording'
-            : `Free trial: ${daysLeft} day${daysLeft!==1?'s':''} remaining · ${Math.max(0,100-user.videoCount)} videos left`}
-        </span>
-      </div>
-      <button className="btn btn-primary btn-sm" style={{background:'var(--amber)',flexShrink:0}} onClick={()=>navigate('plans')}>
-        Upgrade Now →
-      </button>
+// ── Trial Banner ──────────────────────────────────────────────────
+function TrialBanner({user,navigate}){
+  if(user.plan!=='trial') return null;
+  const days=Math.max(0,Math.ceil((user.trialExpiry-Date.now())/86400000));
+  const expired=days===0;
+  return(
+    <div className={`trial-banner${expired?' expired':''}`}>
+      <span>{expired?'🔴 Free trial expired — upgrade to continue recording':`⏳ Free trial: ${days} day${days!==1?'s':''} left · ${Math.max(0,100-(user.videoCount||0))} videos remaining`}</span>
+      <button className="btn btn-primary btn-sm" onClick={()=>navigate('plans')}>Upgrade Now →</button>
     </div>
   );
 }
 
-// ============================================================
-// RECORDING PAGE
-// ============================================================
-function RecordingPage({ user, toast, driveToken, driveEmail, onVideoSaved }) {
-  const [orderId,     setOrderId]     = useState('');
-  const [awb,         setAwb]         = useState('');
-  const [phase,       setPhase]       = useState('idle');
-  const [timer,       setTimer]       = useState(0);
-  const [currentTime, setCurrentTime] = useState(new Date());
-  const [folderName,  setFolderName]  = useState(localStorage.getItem('vms_folder_name')||'');
-  const [lastSaved,   setLastSaved]   = useState('');
-  const [savedVideos, setSavedVideos] = useState(() => DB.getVideos(user.email).slice(0,10));
-  const [camError,    setCamError]    = useState('');
+// ── Record Page ───────────────────────────────────────────────────
+function RecordPage({user,toast,driveToken,driveEmail,onVideoSaved}){
+  const [orderId,setOrderId]=useState('');
+  const [awb,setAwb]=useState('');
+  const [phase,setPhase]=useState('idle'); // idle|recording|saving
+  const [timer,setTimer]=useState(0);
+  const [now,setNow]=useState(new Date());
+  const [folderName,setFolderName]=useState(localStorage.getItem('vms_folder_name')||'');
+  const [lastSaved,setLastSaved]=useState('');
+  const [recentVideos,setRecentVideos]=useState(()=>DB.getVideos(user.email).slice(0,8));
+  const [camErr,setCamErr]=useState('');
 
-  const videoRef        = useRef(null);
-  const streamRef       = useRef(null);
-  const recorderRef     = useRef(null);
-  const chunksRef       = useRef([]);
-  const timerRef        = useRef(null);
-  const folderHandleRef = useRef(null);
-  const orderRef        = useRef(null);
-  const awbRef          = useRef(null);
+  const videoRef=useRef(null),streamRef=useRef(null),recRef=useRef(null);
+  const chunksRef=useRef([]),folderRef=useRef(null),orderRef=useRef(null),awbRef=useRef(null);
 
-  // Check if recording is allowed
-  const canRecord = () => {
-    if (user.plan === 'trial') {
-      if (Date.now() > user.trialExpiry) return { ok:false, reason:'Your free trial has expired. Please upgrade.' };
-      if (user.videoCount >= 100) return { ok:false, reason:'You have used all 100 trial videos. Please upgrade.' };
+  useEffect(()=>{
+    const t=setInterval(()=>setNow(new Date()),1000);
+    setTimeout(()=>orderRef.current&&orderRef.current.focus(),200);
+    return()=>clearInterval(t);
+  },[]);
+
+  useEffect(()=>{
+    let t; if(phase==='recording') t=setInterval(()=>setTimer(x=>x+1),1000); else clearInterval(t);
+    return()=>clearInterval(t);
+  },[phase]);
+
+  useEffect(()=>{
+    const el=videoRef.current; if(!el) return;
+    if(phase==='recording'&&streamRef.current){el.srcObject=streamRef.current;el.play().catch(()=>{});}
+    else if(phase==='idle') el.srcObject=null;
+  },[phase]);
+
+  const canRecord=()=>{
+    if(user.plan==='trial'){
+      if(Date.now()>user.trialExpiry) return{ok:false,msg:'Trial expired. Please upgrade.'};
+      if((user.videoCount||0)>=100) return{ok:false,msg:'100-video trial limit reached. Please upgrade.'};
     }
-    if (user.plan === 'pro' && user.videoCount >= 500) return { ok:false, reason:'Monthly limit of 500 videos reached.' };
-    return { ok: true };
+    if(user.plan==='pro'&&(user.videoCount||0)>=500) return{ok:false,msg:'Monthly limit of 500 videos reached.'};
+    return{ok:true};
   };
 
-  useEffect(() => {
-    const t = setInterval(() => setCurrentTime(new Date()), 1000);
-    setTimeout(() => orderRef.current && orderRef.current.focus(), 200);
-    return () => clearInterval(t);
-  }, []);
-
-  useEffect(() => {
-    if (phase==='recording') timerRef.current = setInterval(()=>setTimer(t=>t+1),1000);
-    else clearInterval(timerRef.current);
-    return () => clearInterval(timerRef.current);
-  }, [phase]);
-
-  useEffect(() => {
-    const el = videoRef.current;
-    if (!el) return;
-    if (phase==='recording' && streamRef.current) { el.srcObject=streamRef.current; el.play().catch(()=>{}); }
-    else if (phase==='idle') el.srcObject = null;
-  }, [phase]);
-
-  const selectFolder = async () => {
-    if (!window.showDirectoryPicker) { toast('Requires Chrome or Edge browser','error'); return; }
-    try {
-      const h = await window.showDirectoryPicker({mode:'readwrite'});
-      folderHandleRef.current=h; setFolderName(h.name);
-      localStorage.setItem('vms_folder_name', h.name);
-      toast(`Folder selected: "${h.name}"`, 'success');
-    } catch(e) { if(e.name!=='AbortError') toast('Cancelled','error'); }
+  const selectFolder=async()=>{
+    if(!window.showDirectoryPicker){toast('Folder picker requires Chrome or Edge','error');return;}
+    try{
+      const h=await window.showDirectoryPicker({mode:'readwrite'});
+      folderRef.current=h; setFolderName(h.name);
+      localStorage.setItem('vms_folder_name',h.name);
+      toast(`Folder selected: "${h.name}"`,'success');
+    }catch(e){if(e.name!=='AbortError')toast('Cancelled','info');}
   };
 
-  const startRecording = async (oid) => {
-    const check = canRecord();
-    if (!check.ok) { toast(check.reason, 'error'); return; }
-    setCamError('');
+  const startRec=async(oid)=>{
+    const c=canRecord(); if(!c.ok){toast(c.msg,'error');return;}
+    setCamErr('');
     let stream;
-    try {
-      stream = await navigator.mediaDevices.getUserMedia({video:{width:{ideal:1280},height:{ideal:720}},audio:true});
-    } catch(e) {
-      setCamError('Camera access denied. Click the camera icon in the browser address bar and allow access.');
-      toast('Camera permission required','error'); return;
-    }
-    streamRef.current = stream; chunksRef.current = [];
-    let mimeType = 'video/webm;codecs=vp8,opus';
-    if(!MediaRecorder.isTypeSupported(mimeType)) mimeType='video/webm';
-    if(!MediaRecorder.isTypeSupported(mimeType)) mimeType='';
-    const rec = new MediaRecorder(stream, mimeType?{mimeType}:{});
-    rec.ondataavailable = e => { if(e.data&&e.data.size>0) chunksRef.current.push(e.data); };
-    rec.start(500); recorderRef.current=rec;
+    try{
+      stream=await navigator.mediaDevices.getUserMedia({
+        video:{width:{ideal:1280},height:{ideal:720},frameRate:{ideal:24}},audio:true
+      });
+    }catch(e){setCamErr('Camera access denied. Click the camera icon in the address bar and allow access.');toast('Camera permission required','error');return;}
+    streamRef.current=stream; chunksRef.current=[];
+    // Optimized bitrate — ~800Kbps video + 64Kbps audio = ~6MB/min
+    let mime='video/webm;codecs=vp8,opus';
+    if(!MediaRecorder.isTypeSupported(mime)) mime='video/webm';
+    if(!MediaRecorder.isTypeSupported(mime)) mime='';
+    const opts=mime?{mimeType:mime,videoBitsPerSecond:800000,audioBitsPerSecond:64000}:{videoBitsPerSecond:800000};
+    const rec=new MediaRecorder(stream,opts);
+    rec.ondataavailable=e=>{if(e.data&&e.data.size>0)chunksRef.current.push(e.data);};
+    rec.start(500); recRef.current=rec;
     setTimer(0); setPhase('recording');
-    toast(`🔴 Recording: ${oid}`,'success');
+    toast(`Recording started: ${oid}`,'success');
     setTimeout(()=>awbRef.current&&awbRef.current.focus(),300);
   };
 
-  const stopAndSave = (awbVal) => {
+  const stopAndSave=(awbVal)=>{
     const oid=orderId, dur=fmt(timer);
     setPhase('saving');
-    const rec=recorderRef.current;
+    const rec=recRef.current;
     if(!rec||rec.state==='inactive'){finalise(null,oid,awbVal,dur);return;}
-    rec.onstop = async()=>{ const blob=new Blob(chunksRef.current,{type:'video/webm'}); await finalise(blob,oid,awbVal,dur); };
+    rec.onstop=async()=>{const blob=new Blob(chunksRef.current,{type:'video/webm'});await finalise(blob,oid,awbVal,dur);};
     rec.stop();
     if(streamRef.current){streamRef.current.getTracks().forEach(t=>t.stop());streamRef.current=null;}
   };
 
-  const finalise = async(blob,oid,awbVal,dur) => {
-    const ts = new Date().toISOString().replace(/[:.]/g,'-');
-    const filename = `${oid}__${awbVal}__${ts}.webm`;
-    let storage = 'none';
-
+  const finalise=async(blob,oid,awbVal,dur)=>{
+    const ts=new Date().toISOString().replace(/[:.]/g,'-');
+    const fname=`${oid}__${awbVal}__${ts}.webm`;
+    let storage='none';
     if(blob){
-      if(driveToken){
-        try { await uploadToDrive(blob,filename,driveToken); storage='drive'; setLastSaved(filename); toast(`Uploaded to Google Drive: ${filename}`,'success'); }
-        catch(e){ toast('Drive upload failed, saving locally','error'); storage=await saveLocalOrDownload(blob,filename); }
-      } else {
-        storage = await saveLocalOrDownload(blob,filename);
-      }
+      if(driveToken){try{await uploadDrive(blob,fname,driveToken);storage='drive';setLastSaved(fname);toast(`Uploaded to Google Drive: ${fname}`,'success');}
+        catch(e){toast('Drive upload failed, saving locally','error');storage=await saveLocal(blob,fname);}}
+      else storage=await saveLocal(blob,fname);
     }
-
-    const sizeMB = blob?`${(blob.size/1024/1024).toFixed(1)}MB`:'—';
-    const newVid = { id:Date.now(), orderId:oid, awb:awbVal, date:new Date().toISOString().split('T')[0], duration:dur, size:sizeMB, status:'saved', storage, filename };
-    const allVideos = [newVid, ...DB.getVideos(user.email)];
-    DB.saveVideos(user.email, allVideos);
-    setSavedVideos(allVideos.slice(0,10));
-    onVideoSaved(newVid);
-
+    const sizeMB=blob?`${(blob.size/1048576).toFixed(1)}MB`:'—';
+    const vid={id:Date.now(),orderId:oid,awb:awbVal,date:new Date().toISOString().split('T')[0],duration:dur,size:sizeMB,status:'saved',storage,filename:fname};
+    const all=[vid,...DB.getVideos(user.email)];
+    DB.saveVideos(user.email,all);
+    setRecentVideos(all.slice(0,8));
+    onVideoSaved(vid);
     setOrderId('');setAwb('');setTimer(0);setPhase('idle');
-    chunksRef.current=[];recorderRef.current=null;
+    chunksRef.current=[];recRef.current=null;
     setTimeout(()=>orderRef.current&&orderRef.current.focus(),200);
   };
 
-  const saveLocalOrDownload = async(blob,filename) => {
-    if(folderHandleRef.current){
-      try{
-        const fh=await folderHandleRef.current.getFileHandle(filename,{create:true});
-        const w=await fh.createWritable(); await w.write(blob); await w.close();
-        setLastSaved(filename); toast(`Saved to "${folderHandleRef.current.name}"`,'success'); return 'local';
-      }catch(e){}
+  const saveLocal=async(blob,fname)=>{
+    if(folderRef.current){
+      try{const fh=await folderRef.current.getFileHandle(fname,{create:true});const w=await fh.createWritable();await w.write(blob);await w.close();setLastSaved(fname);toast(`Saved to "${folderRef.current.name}"`,'success');return 'local';}catch(e){}
     }
-    const url=URL.createObjectURL(blob); const a=document.createElement('a');
-    a.href=url;a.download=filename;document.body.appendChild(a);a.click();document.body.removeChild(a);
-    setTimeout(()=>URL.revokeObjectURL(url),10000);
-    if(!folderHandleRef.current) toast(`Downloaded: ${filename} — Select a folder to auto-save`,'info');
-    else toast(`Downloaded: ${filename}`,'success');
+    const url=URL.createObjectURL(blob);const a=document.createElement('a');a.href=url;a.download=fname;document.body.appendChild(a);a.click();document.body.removeChild(a);setTimeout(()=>URL.revokeObjectURL(url),10000);
+    toast(folderName?`Downloaded: ${fname}`:`Downloaded: ${fname} — Select a folder to auto-save`,'info');
     return 'download';
   };
 
-  const uploadToDrive = async(blob,filename,token) => {
-    let fid = sessionStorage.getItem('drive_folder_id');
+  const uploadDrive=async(blob,fname,token)=>{
+    let fid=sessionStorage.getItem('drive_fid');
     if(!fid){
-      const r=await fetch(`https://www.googleapis.com/drive/v3/files?q=${encodeURIComponent("name='Zeespares Packing Videos' and mimeType='application/vnd.google-apps.folder' and trashed=false")}`,{headers:{Authorization:`Bearer ${token}`}});
+      const r=await fetch(`https://www.googleapis.com/drive/v3/files?q=${encodeURIComponent("name='OpenVMS Packing Videos' and mimeType='application/vnd.google-apps.folder' and trashed=false")}`,{headers:{Authorization:`Bearer ${token}`}});
       const d=await r.json();
-      if(d.files&&d.files.length>0){fid=d.files[0].id;}
-      else{const cr=await fetch('https://www.googleapis.com/drive/v3/files',{method:'POST',headers:{Authorization:`Bearer ${token}`,'Content-Type':'application/json'},body:JSON.stringify({name:'Zeespares Packing Videos',mimeType:'application/vnd.google-apps.folder'})});const cd=await cr.json();fid=cd.id;}
-      sessionStorage.setItem('drive_folder_id',fid);
+      fid=d.files&&d.files[0]?d.files[0].id:(await(await fetch('https://www.googleapis.com/drive/v3/files',{method:'POST',headers:{Authorization:`Bearer ${token}`,'Content-Type':'application/json'},body:JSON.stringify({name:'OpenVMS Packing Videos',mimeType:'application/vnd.google-apps.folder'})})).json()).id;
+      sessionStorage.setItem('drive_fid',fid);
     }
     const form=new FormData();
-    form.append('metadata',new Blob([JSON.stringify({name:filename,parents:[fid]})],{type:'application/json'}));
-    form.append('file',blob,filename);
+    form.append('metadata',new Blob([JSON.stringify({name:fname,parents:[fid]})],{type:'application/json'}));
+    form.append('file',blob,fname);
     const up=await fetch('https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart',{method:'POST',headers:{Authorization:`Bearer ${token}`},body:form});
     if(!up.ok) throw new Error('Upload failed');
     return up.json();
   };
 
-  const onOrderKeyDown = e => { if(e.key==='Enter'&&orderId.trim().length>=3&&phase==='idle'){e.preventDefault();startRecording(orderId.trim());} };
-  const onAwbKeyDown   = e => { if(e.key==='Enter'&&awb.trim().length>=3&&phase==='recording'){e.preventDefault();stopAndSave(awb.trim());} };
-  const fmt = s => `${String(Math.floor(s/60)).padStart(2,'0')}:${String(s%60).padStart(2,'0')}`;
-  const isIdle=phase==='idle', isRec=phase==='recording', isSaving=phase==='saving';
-  const storageLabel = driveToken?`📂 Google Drive (${driveEmail||''})`:folderName?`📁 ${folderName}`:'📥 Browser download';
+  const onOK=e=>{if(e.key==='Enter'&&orderId.trim().length>=3&&phase==='idle'){e.preventDefault();startRec(orderId.trim());}};
+  const onAK=e=>{if(e.key==='Enter'&&awb.trim().length>=3&&phase==='recording'){e.preventDefault();stopAndSave(awb.trim());}};
+  const fmt=s=>`${String(Math.floor(s/60)).padStart(2,'0')}:${String(s%60).padStart(2,'0')}`;
+  const isIdle=phase==='idle',isRec=phase==='recording',isSav=phase==='saving';
 
-  return (
+  return(
     <div>
-      {/* Storage bar */}
-      <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',flexWrap:'wrap',gap:10,
-        padding:'12px 18px',borderRadius:12,marginBottom:18,
-        background:driveToken?'rgba(30,144,255,0.08)':folderName?'rgba(10,138,97,0.1)':'rgba(255,165,2,0.08)',
-        border:`1px solid ${driveToken?'rgba(30,144,255,0.35)':folderName?'rgba(10,138,97,0.35)':'rgba(255,165,2,0.35)'}`}}>
-        <div style={{display:'flex',alignItems:'center',gap:10}}>
-          <span style={{fontSize:18}}>{driveToken?'📂':folderName?'📁':'⚠️'}</span>
+      {/* Folder / Drive bar */}
+      <div className="folder-bar" style={{borderColor:driveToken?'#bbf7d0':folderName?'#bfdbfe':'#fde68a',background:driveToken?'#f0fdf4':folderName?'#eff6ff':'#fffbeb'}}>
+        <div style={{display:'flex',alignItems:'center',gap:8}}>
+          <span style={{fontSize:16}}>{driveToken?'📂':folderName?'📁':'⚠️'}</span>
           <div>
-            <div style={{fontSize:13,fontWeight:700,color:driveToken?'var(--blue)':folderName?'var(--green-light)':'var(--amber)'}}>
-              {driveToken?`Google Drive: ${driveEmail||'Connected'}`:folderName?`Folder: "${folderName}"`:'No save location set'}
-            </div>
-            <div style={{fontSize:11,color:'var(--text2)'}}>
-              {driveToken?'Videos auto-upload to "Zeespares Packing Videos" in your Drive':
-               folderName?(lastSaved?`Last: ${lastSaved.substring(0,40)}`:'Videos save directly to this folder'):
-               'Connect Google Drive in Settings, or select a local folder'}
+            <span style={{fontWeight:600,fontSize:12,color:driveToken?'#15803d':folderName?'#1d4ed8':'#92400e'}}>
+              {driveToken?`Google Drive: ${driveEmail||'Connected'}`:folderName?`Save Folder: "${folderName}"`:'No save location — videos will download'}
+            </span>
+            <div style={{fontSize:11,color:'#6b7280',marginTop:1}}>
+              {driveToken?'Auto-upload to "OpenVMS Packing Videos"':folderName?lastSaved?`Last: ${lastSaved.substring(0,50)}`:'Videos save directly to folder':'Select a local folder or connect Google Drive in Settings'}
             </div>
           </div>
         </div>
-        {!driveToken&&<button className="btn btn-secondary btn-sm" onClick={selectFolder}>{folderName?'🔄 Change Folder':'📂 Select Folder'}</button>}
+        {!driveToken&&<button className="btn btn-outline btn-sm" onClick={selectFolder}>{folderName?'Change Folder':'📂 Select Folder'}</button>}
       </div>
 
-      <div className="record-grid" style={{alignItems:'start'}}>
-        {/* LEFT */}
-        <div className="panel">
-          <div className="panel-title">📱 Scan &amp; Record</div>
-          {camError&&<div style={{background:'rgba(255,71,87,0.1)',border:'1px solid rgba(255,71,87,0.3)',borderRadius:9,padding:'10px 14px',marginBottom:14,fontSize:12,color:'var(--red)',lineHeight:1.5}}>⚠️ {camError}</div>}
-
-          <div className="scan-field">
-            <div className="scan-label"><span>① Order ID</span>{isRec&&<span className="chip chip-green">✓ Scanned</span>}{isIdle&&<span style={{fontSize:11,color:'var(--text3)'}}>Scan barcode → Enter</span>}</div>
-            <div className="scan-input-wrap">
-              <span className="scan-icon">🔍</span>
-              <input ref={orderRef} className={`scan-input${isRec||isSaving?' done':''}`}
-                placeholder="Scan Order ID or type and press Enter..."
-                value={orderId} onChange={e=>{if(phase==='idle')setOrderId(e.target.value);}}
-                onKeyDown={onOrderKeyDown} disabled={!isIdle} />
-              {(isRec||isSaving)&&<span className="scan-check">✓</span>}
+      <div className="rec-layout">
+        {/* LEFT — Scan Controls */}
+        <div>
+          <div className="scan-card">
+            <div className="scan-card-header">
+              <span style={{fontSize:16}}>📱</span>
+              <span className="scan-card-title">Scan &amp; Record</span>
+              {isRec&&<span className="chip chip-danger" style={{marginLeft:'auto'}}><span className="dot dot-red"></span>REC {fmt(timer)}</span>}
+              {isIdle&&<span className="chip chip-success" style={{marginLeft:'auto'}}><span className="dot dot-success"></span>Ready</span>}
+              {isSav&&<span className="chip chip-warning" style={{marginLeft:'auto'}}>Saving...</span>}
             </div>
-            {isIdle&&orderId.length>=3&&<button className="btn btn-primary btn-sm" style={{marginTop:8,width:'100%'}} onClick={()=>startRecording(orderId.trim())}>▶ Start Recording</button>}
-          </div>
+            <div className="scan-card-body">
+              {camErr&&<div style={{background:'#fef2f2',border:'1px solid #fecaca',borderRadius:6,padding:'9px 12px',marginBottom:12,fontSize:12,color:'#dc2626',lineHeight:1.5}}>⚠ {camErr}</div>}
 
-          <div className="scan-field">
-            <div className="scan-label"><span>② AWB Number</span>{isSaving&&<span className="chip chip-green">✓ Scanned</span>}{isRec&&<span style={{fontSize:11,color:'var(--red)',fontWeight:700}}>● Recording...</span>}</div>
-            <div className="scan-input-wrap">
-              <span className="scan-icon">📦</span>
-              <input ref={awbRef} className={`scan-input${isRec?' active':''}${isSaving?' done':''}`}
-                placeholder={isRec?"Scan AWB or type and press Enter to stop...":"Waiting for Order ID..."}
-                value={awb} onChange={e=>{if(phase==='recording')setAwb(e.target.value);}}
-                onKeyDown={onAwbKeyDown} disabled={!isRec} />
-              {isSaving&&<span className="scan-check">✓</span>}
+              {/* ORDER ID */}
+              <div className="scan-field-wrap">
+                <div className="scan-field-label">
+                  <span>① Order ID</span>
+                  {isRec&&<span className="chip chip-success" style={{fontSize:10}}>✓ Scanned</span>}
+                  {isIdle&&<span style={{fontSize:11,color:'#6b7280'}}>Scan → press Enter</span>}
+                </div>
+                <div className="scan-input-box">
+                  <span className="scan-pre-icon">🔍</span>
+                  <input ref={orderRef} className={`scan-input${isRec||isSav?' filled':''}`}
+                    placeholder="Scan Order ID barcode or type and press Enter..."
+                    value={orderId} onChange={e=>{if(isIdle)setOrderId(e.target.value);}}
+                    onKeyDown={onOK} disabled={!isIdle}/>
+                  {(isRec||isSav)&&<span className="scan-suf">✓</span>}
+                </div>
+                {isIdle&&orderId.length>=3&&<div style={{marginTop:8}}><button className="btn btn-rec" style={{width:'100%'}} onClick={()=>startRec(orderId.trim())}>▶ Start Recording</button></div>}
+                {isIdle&&orderId.length>0&&orderId.length<3&&<div className="scan-hint">Type full Order ID then press Enter</div>}
+              </div>
+
+              {/* AWB */}
+              <div className="scan-field-wrap">
+                <div className="scan-field-label">
+                  <span>② AWB Number</span>
+                  {isSav&&<span className="chip chip-success" style={{fontSize:10}}>✓ Scanned</span>}
+                  {isRec&&<span style={{fontSize:11,color:'#dc2626',fontWeight:600}}>Scan AWB to stop recording</span>}
+                </div>
+                <div className="scan-input-box">
+                  <span className="scan-pre-icon">📦</span>
+                  <input ref={awbRef} className={`scan-input${isRec?' active-scan':''}${isSav?' filled':''}`}
+                    placeholder={isRec?"Scan AWB barcode or type and press Enter to stop...":"Waiting for Order ID..."}
+                    value={awb} onChange={e=>{if(isRec)setAwb(e.target.value);}}
+                    onKeyDown={onAK} disabled={!isRec}/>
+                  {isSav&&<span className="scan-suf">✓</span>}
+                </div>
+                {isRec&&awb.length>=3&&<div style={{marginTop:8}}><button className="btn btn-stop" style={{width:'100%'}} onClick={()=>stopAndSave(awb.trim())}>⬛ Stop &amp; Save Video</button></div>}
+              </div>
+
+              {/* Status grid */}
+              <div className="status-grid">
+                <div className="status-item">
+                  <div className="status-item-label">Duration</div>
+                  <div className="status-item-val" style={{color:isRec?'#dc2626':'#1a1a2e',fontFamily:'JetBrains Mono'}}>{fmt(timer)}</div>
+                </div>
+                <div className="status-item">
+                  <div className="status-item-label">Est. Size</div>
+                  <div className="status-item-val">{Math.max(1,Math.round(timer*0.1))} MB</div>
+                </div>
+                <div className="status-item">
+                  <div className="status-item-label">Save To</div>
+                  <div style={{fontSize:12,fontWeight:600,color:driveToken?'#1d4ed8':'#15803d',marginTop:2}}>
+                    {driveToken?'Drive':folderName?'Local':'Download'}
+                  </div>
+                </div>
+                <div className="status-item">
+                  <div className="status-item-label">Videos Used</div>
+                  <div className="status-item-val">{user.videoCount||0}</div>
+                </div>
+              </div>
+
+              {/* Workflow guide */}
+              <div style={{background:'#f8fafc',border:'1px solid #e2e5ed',borderRadius:6,padding:'10px 12px'}}>
+                <div style={{fontSize:11,fontWeight:700,color:'#374151',marginBottom:7,textTransform:'uppercase',letterSpacing:'.5px'}}>Workflow</div>
+                {[{n:'1',t:'Scan Order ID → press Enter → camera starts',d:isRec||isSav},
+                  {n:'2',t:'Scan AWB → press Enter → video saves automatically',d:isSav},
+                  {n:'3',t:'Cursor returns to Order ID → ready for next order',d:false}].map(s=>(
+                  <div key={s.n} style={{display:'flex',gap:7,marginBottom:5,opacity:s.d?1:0.5}}>
+                    <span style={{color:s.d?'#22c55e':'#9ca3af',fontWeight:700,flexShrink:0,fontSize:12,width:14}}>{s.d?'✓':s.n}</span>
+                    <span style={{fontSize:12,color:s.d?'#374151':'#6b7280',lineHeight:1.4}}>{s.t}</span>
+                  </div>
+                ))}
+              </div>
             </div>
-            {isRec&&awb.length>=3&&<button className="btn btn-danger btn-sm" style={{marginTop:8,width:'100%'}} onClick={()=>stopAndSave(awb.trim())}>⬛ Stop &amp; Save</button>}
-          </div>
-
-          <div className="status-card" style={{marginTop:4}}>
-            {[
-              {l:'Status', v:isSaving?<span style={{color:'var(--amber)',fontWeight:700}}>💾 Saving{driveToken?' to Drive':''}...</span>:isRec?<span style={{display:'flex',alignItems:'center',gap:6,color:'var(--red)',fontWeight:700}}><span style={{width:8,height:8,borderRadius:'50%',background:'var(--red)',display:'inline-block',animation:'pulse 1s infinite'}}></span>RECORDING</span>:<span style={{color:'var(--green-light)',fontWeight:700}}>READY ✓</span>},
-              {l:'Duration', v:<span style={{fontFamily:'JetBrains Mono',fontSize:20,fontWeight:800,color:isRec?'var(--red)':'var(--text2)'}}>{fmt(timer)}</span>},
-              {l:'Save to', v:<span style={{fontSize:11,color:driveToken?'var(--blue)':'var(--green-light)',fontWeight:600}}>{storageLabel}</span>},
-              {l:'Est. Size', v:`${Math.max(5,Math.round(timer*0.35))} MB`},
-            ].map((r,i)=>(
-              <div className="status-row" key={i} style={{marginBottom:i<3?10:0}}>
-                <span className="status-label">{r.l}</span><span className="status-value">{r.v}</span>
-              </div>
-            ))}
-          </div>
-
-          <div style={{marginTop:14,padding:'12px 14px',background:'var(--bg3)',borderRadius:9}}>
-            <div style={{fontSize:12,fontWeight:700,color:'var(--text)',marginBottom:8}}>⚡ Workflow</div>
-            {[{n:1,t:'Scan Order ID → Enter → camera + recording starts',d:isRec||isSaving},
-              {n:2,t:'Scan AWB → Enter → video saves automatically',d:isSaving},
-              {n:3,t:'Cursor returns to Order ID → scan next order',d:false}].map(s=>(
-              <div key={s.n} style={{display:'flex',gap:8,alignItems:'flex-start',marginBottom:5,opacity:s.d?1:0.55}}>
-                <span style={{color:s.d?'var(--green-light)':'var(--text3)',fontWeight:700,flexShrink:0,fontSize:12}}>{s.d?'✓':s.n}</span>
-                <span style={{fontSize:12,color:s.d?'var(--text)':'var(--text2)',lineHeight:1.4}}>{s.t}</span>
-              </div>
-            ))}
           </div>
         </div>
 
-        {/* RIGHT */}
-        <div style={{display:'flex',flexDirection:'column',gap:16}}>
-          <div style={{position:'relative',background:'#000',borderRadius:16,overflow:'hidden',border:'1px solid var(--border)',aspectRatio:'16/9',minHeight:260}}>
-            <video ref={videoRef} autoPlay muted playsInline style={{width:'100%',height:'100%',objectFit:'cover',display:'block',opacity:isRec?1:0,transition:'opacity 0.4s'}} />
-            {isIdle&&<div style={{position:'absolute',inset:0,display:'flex',flexDirection:'column',alignItems:'center',justifyContent:'center',gap:12,background:'var(--bg3)',color:'var(--text3)'}}>
-              <span style={{fontSize:52,opacity:0.35}}>📷</span>
-              <span style={{fontSize:14,fontWeight:500}}>Scan an Order ID to start recording</span>
-              {driveToken&&<span style={{fontSize:12,color:'var(--blue)',fontWeight:600}}>📂 Drive connected — videos auto-upload</span>}
-              {!driveToken&&folderName&&<span style={{fontSize:12,color:'var(--green-light)',fontWeight:600}}>📁 {folderName}</span>}
-            </div>}
-            {isSaving&&<div style={{position:'absolute',inset:0,display:'flex',flexDirection:'column',alignItems:'center',justifyContent:'center',gap:12,background:'rgba(0,0,0,0.8)',backdropFilter:'blur(4px)'}}>
-              <span style={{fontSize:40}}>{driveToken?'📂':'💾'}</span>
-              <span style={{fontSize:16,fontWeight:700,color:'#fff'}}>{driveToken?'Uploading to Google Drive...':'Saving video...'}</span>
-            </div>}
+        {/* RIGHT — Video + Recent */}
+        <div style={{display:'flex',flexDirection:'column',gap:14}}>
+          {/* Video frame */}
+          <div className="video-frame" style={{minHeight:280}}>
+            <video ref={videoRef} autoPlay muted playsInline style={{width:'100%',height:'100%',objectFit:'cover',opacity:isRec?1:0,transition:'opacity .4s'}}/>
+            {isIdle&&(
+              <div className="video-placeholder">
+                <div className="video-placeholder-icon">📷</div>
+                <div className="video-placeholder-text">Scan an Order ID to start camera</div>
+                {driveToken&&<span style={{fontSize:11,color:'#60a5fa',marginTop:4}}>📂 Drive connected — videos auto-upload</span>}
+                {!driveToken&&folderName&&<span style={{fontSize:11,color:'#4ade80',marginTop:4}}>📁 {folderName}</span>}
+              </div>
+            )}
+            {isSav&&(
+              <div style={{position:'absolute',inset:0,background:'rgba(0,0,0,.8)',display:'flex',flexDirection:'column',alignItems:'center',justifyContent:'center',gap:10,backdropFilter:'blur(4px)'}}>
+                <span style={{fontSize:36}}>{driveToken?'📂':'💾'}</span>
+                <span style={{fontSize:15,fontWeight:700,color:'#fff'}}>{driveToken?'Uploading to Google Drive...':'Saving video...'}</span>
+                <span style={{fontSize:12,color:'rgba(255,255,255,.6)'}}>{orderId}</span>
+              </div>
+            )}
             {isRec&&<>
-              <div style={{position:'absolute',top:14,left:14,display:'flex',alignItems:'center',gap:7,background:'rgba(0,0,0,0.65)',borderRadius:20,padding:'6px 13px',backdropFilter:'blur(6px)'}}>
-                <span style={{width:9,height:9,borderRadius:'50%',background:'var(--red)',display:'inline-block',animation:'pulse 1s infinite'}}></span>
+              <div className="video-overlay-badge vob-rec">
+                <span className="dot dot-red"></span>
                 <span style={{fontSize:12,fontWeight:700,color:'#fff',letterSpacing:1}}>REC</span>
               </div>
-              <div style={{position:'absolute',top:14,right:14,background:'rgba(0,0,0,0.65)',borderRadius:20,padding:'6px 14px',backdropFilter:'blur(6px)',fontFamily:'JetBrains Mono',fontSize:15,fontWeight:700,color:'#fff'}}>{fmt(timer)}</div>
-              <div style={{position:'absolute',bottom:14,left:14,background:'rgba(0,0,0,0.55)',padding:'3px 10px',borderRadius:6,fontFamily:'JetBrains Mono',fontSize:11,color:'rgba(255,255,255,0.75)'}}>{currentTime.toLocaleString('en-IN')}</div>
-              <div style={{position:'absolute',bottom:14,right:14,background:'rgba(0,0,0,0.55)',padding:'3px 10px',borderRadius:6,fontFamily:'JetBrains Mono',fontSize:11,color:'rgba(255,255,255,0.75)'}}>{orderId}</div>
+              <div className="video-overlay-badge vob-timer">{fmt(timer)}</div>
+              <div className="video-overlay-badge vob-ts">{now.toLocaleString('en-IN')}</div>
+              <div className="video-overlay-badge vob-id">{orderId}</div>
             </>}
           </div>
 
-          <div className="panel" style={{padding:'16px 20px'}}>
-            <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',marginBottom:12}}>
-              <span style={{fontSize:13,fontWeight:700,color:'var(--text2)',letterSpacing:'0.5px'}}>RECENT RECORDINGS</span>
-              <span className="chip chip-green">{savedVideos.length} saved</span>
+          {/* Recent recordings */}
+          <div className="scan-card">
+            <div className="scan-card-header">
+              <span className="scan-card-title">Recent Recordings</span>
+              <span className="chip chip-blue">{recentVideos.length} saved</span>
             </div>
-            {savedVideos.length===0
-              ? <div style={{textAlign:'center',color:'var(--text3)',fontSize:13,padding:'16px 0'}}>No recordings yet — scan your first order above</div>
-              : <div style={{display:'flex',gap:10,overflowX:'auto',paddingBottom:4}}>
-                  {savedVideos.slice(0,8).map(v=>(
-                    <div key={v.id} style={{flexShrink:0,width:130,background:'var(--bg3)',borderRadius:10,padding:'10px 12px',border:'1px solid var(--border)'}}>
-                      <div style={{fontSize:22,marginBottom:6,textAlign:'center'}}>{v.storage==='drive'?'📂':'🎬'}</div>
-                      <div style={{fontSize:11,fontFamily:'JetBrains Mono',color:'var(--green-light)',fontWeight:700,marginBottom:4,whiteSpace:'nowrap',overflow:'hidden',textOverflow:'ellipsis'}} title={v.orderId}>{v.orderId}</div>
-                      <div style={{fontSize:10,color:'var(--text3)',marginBottom:2}}>{v.duration} · {v.size}</div>
-                      <div style={{fontSize:9,color:'var(--text3)',textTransform:'uppercase',letterSpacing:'0.5px'}}>{v.storage}</div>
-                    </div>
-                  ))}
-                </div>}
+            <div style={{padding:'12px 16px'}}>
+              {recentVideos.length===0
+                ? <div style={{textAlign:'center',color:'#9ca3af',fontSize:13,padding:'12px 0'}}>No recordings yet — scan your first order above</div>
+                : <div className="recent-grid">
+                    {recentVideos.map(v=>(
+                      <div key={v.id} className="recent-item">
+                        <div className="recent-thumb">{v.storage==='drive'?'📂':'🎬'}</div>
+                        <div className="recent-id" title={v.orderId}>{v.orderId}</div>
+                        <div className="recent-meta">{v.duration} · {v.size}</div>
+                        <div className="recent-meta" style={{textTransform:'uppercase',letterSpacing:'.3px'}}>{v.storage}</div>
+                      </div>
+                    ))}
+                  </div>}
+            </div>
           </div>
         </div>
       </div>
@@ -850,136 +724,196 @@ function RecordingPage({ user, toast, driveToken, driveEmail, onVideoSaved }) {
   );
 }
 
-// ============================================================
-// DASHBOARD
-// ============================================================
-function Dashboard({ user, navigate }) {
-  const videos = DB.getVideos(user.email);
-  const today  = new Date().toISOString().split('T')[0];
-  const todayCount  = videos.filter(v=>v.date===today).length;
-  const monthCount  = videos.filter(v=>v.date&&v.date.startsWith(new Date().toISOString().substring(0,7))).length;
-  const planCfg = PLANS_CONFIG.find(p=>p.id===user.plan)||PLANS_CONFIG[0];
-  const usedPct = user.plan==='trial' ? Math.min(100,Math.round((user.videoCount/100)*100))
-                : user.plan==='pro'   ? Math.min(100,Math.round((user.videoCount/500)*100)) : 5;
+// ── Dashboard ─────────────────────────────────────────────────────
+function DashboardPage({user,navigate}){
+  const videos=DB.getVideos(user.email);
+  const today=new Date().toISOString().split('T')[0];
+  const todayCount=videos.filter(v=>v.date===today).length;
+  const plan=PLANS.find(p=>p.id===user.plan)||PLANS[0];
+  const usedPct=user.plan==='trial'?Math.min(100,Math.round(((user.videoCount||0)/100)*100)):user.plan==='pro'?Math.min(100,Math.round(((user.videoCount||0)/500)*100)):5;
 
-  return (
+  return(
     <div>
-      {user.plan==='trial'&&<TrialBanner user={user} navigate={navigate}/>}
-      <div className="stats-grid">
-        {[
-          {icon:'🎬',val:videos.length||0,label:'Total Recordings',change:todayCount>0?`+${todayCount} today`:'Start recording!'},
-          {icon:'🛡️',val:videos.length||0,label:'Orders Protected',change:'Dispute-proof'},
-          {icon:'📦',val:monthCount||0,label:'This Month',change:`Limit: ${planCfg.videoLimit>=9999?'Unlimited':planCfg.videoLimit}`},
-          {icon:'💾',val:`${user.videoCount||0}`,label:'Videos Used',change:`${usedPct}% of plan`},
+      <TrialBanner user={user} navigate={navigate}/>
+      <div className="stats-row">
+        {[{icon:'🎬',val:videos.length,label:'Total Recordings',change:`+${todayCount} today`,iconBg:'#eff6ff',iconColor:'#2874f0'},
+          {icon:'🛡️',val:videos.length,label:'Orders Protected',change:'Dispute-proof',iconBg:'#f0fdf4',iconColor:'#15803d'},
+          {icon:'📦',val:videos.filter(v=>v.date&&v.date.startsWith(new Date().toISOString().substring(0,7))).length,label:'This Month',change:`Limit: ${plan.videoLimit>=9999?'Unlimited':plan.videoLimit}`,iconBg:'#fffbeb',iconColor:'#b45309'},
+          {icon:'💾',val:user.videoCount||0,label:'Videos Used',change:`${usedPct}% of plan`,iconBg:'#fdf4ff',iconColor:'#7c3aed'},
         ].map((s,i)=>(
-          <div className="stat-card" key={i}>
-            <div className="stat-icon">{s.icon}</div>
-            <div className="stat-value">{s.val}</div>
-            <div className="stat-label">{s.label}</div>
-            <div className="stat-change">{s.change}</div>
+          <div className="stat-box" key={i}>
+            <div className="stat-box-top">
+              <div><div className="stat-val">{s.val}</div><div className="stat-lbl">{s.label}</div></div>
+              <div className="stat-icon-box" style={{background:s.iconBg}}><span style={{fontSize:18}}>{s.icon}</span></div>
+            </div>
+            <div className="stat-change" style={{color:i===0?'#22c55e':'#6b7280'}}>{s.change}</div>
           </div>
         ))}
       </div>
 
-      <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:20,marginBottom:20}}>
-        <div className="panel" style={{padding:'20px 22px'}}>
-          <div className="panel-title">⚡ Quick Actions</div>
-          <div style={{display:'flex',flexDirection:'column',gap:8}}>
-            <button className="btn btn-primary" onClick={()=>navigate('record')}>▶ Start New Recording</button>
-            <button className="btn btn-secondary" onClick={()=>navigate('videos')}>📁 View All Videos</button>
-            {user.plan!=='business'&&<button className="btn btn-secondary" style={{borderColor:'var(--amber)',color:'var(--amber)'}} onClick={()=>navigate('plans')}>⬆ Upgrade Plan</button>}
+      <div style={{display:'grid',gridTemplateColumns:'1fr 2fr',gap:14,marginBottom:14}}>
+        <div className="card">
+          <div className="card-header"><span className="card-title">Quick Actions</span></div>
+          <div className="card-body" style={{display:'flex',flexDirection:'column',gap:8}}>
+            <button className="btn btn-primary" style={{justifyContent:'flex-start',gap:8}} onClick={()=>navigate('scans')}>
+              <span>📹</span> Start Recording
+            </button>
+            <button className="btn btn-outline" style={{justifyContent:'flex-start',gap:8}} onClick={()=>navigate('videos')}>
+              <span>📁</span> View All Videos
+            </button>
+            <button className="btn btn-outline" style={{justifyContent:'flex-start',gap:8}} onClick={()=>navigate('analytics')}>
+              <span>📊</span> Analytics
+            </button>
+            {user.plan!=='business'&&<button className="btn btn-outline" style={{justifyContent:'flex-start',gap:8,borderColor:'#fde68a',color:'#b45309',background:'#fffbeb'}} onClick={()=>navigate('plans')}>
+              <span>⬆</span> Upgrade Plan
+            </button>}
           </div>
         </div>
-        <div className="panel" style={{padding:'20px 22px'}}>
-          <div className="panel-title">📊 Plan Usage</div>
-          <div style={{marginBottom:8,fontSize:13,color:'var(--text2)'}}>
-            {user.videoCount||0} / {planCfg.videoLimit>=9999?'∞':planCfg.videoLimit} videos used
+        <div className="card">
+          <div className="card-header"><span className="card-title">Plan Usage</span></div>
+          <div className="card-body">
+            <div style={{display:'flex',justifyContent:'space-between',alignItems:'center',marginBottom:6}}>
+              <span style={{fontSize:13,color:'#374151'}}>{user.videoCount||0} / {plan.videoLimit>=9999?'Unlimited':plan.videoLimit} videos</span>
+              <span className="chip chip-blue">{plan.name}</span>
+            </div>
+            <div className="progress-bar" style={{marginBottom:10}}><div className="progress-fill" style={{width:usedPct+'%'}}></div></div>
+            {user.plan==='trial'&&<div style={{fontSize:12,color:'#b45309'}}>Trial expires: {new Date(user.trialExpiry).toLocaleDateString('en-IN')}</div>}
           </div>
-          <div className="progress-bar"><div className="progress-fill" style={{width:usedPct+'%'}}></div></div>
-          <div style={{marginTop:12,fontSize:12,color:'var(--text3)'}}>Plan: <strong style={{color:'var(--green-light)'}}>{planCfg.name}</strong></div>
-          {user.plan==='trial'&&<div style={{marginTop:4,fontSize:12,color:'var(--amber)'}}>
-            Trial expires: {new Date(user.trialExpiry).toLocaleDateString('en-IN')}
-          </div>}
         </div>
       </div>
 
-      <div className="table-wrap">
-        <div className="table-header">
-          <span className="table-title">Recent Recordings</span>
-          <button className="btn btn-secondary btn-sm" onClick={()=>navigate('videos')}>View All →</button>
+      <div className="table-card">
+        <div className="table-card-header">
+          <span className="table-card-title">Recent Recordings</span>
+          <button className="btn btn-outline btn-sm" onClick={()=>navigate('videos')}>View All →</button>
         </div>
         {videos.length===0
-          ? <div className="empty-state"><div className="empty-icon">🎬</div><div className="empty-text">No recordings yet — go to Record Video to start</div></div>
-          : <table><thead><tr><th>Order ID</th><th>AWB</th><th>Date</th><th>Duration</th><th>Size</th><th>Storage</th></tr></thead>
+          ? <div className="empty-state"><div className="empty-icon">🎬</div><div className="empty-text">No recordings yet</div><div className="empty-sub">Go to Scans → VMS to start recording</div></div>
+          : <><table className="tbl"><thead><tr><th>Tracking ID</th><th>AWB</th><th>Date</th><th>Time</th><th>Duration</th><th>Size</th><th>Storage</th><th>Action</th></tr></thead>
             <tbody>{videos.slice(0,8).map(v=>(
               <tr key={v.id}>
-                <td className="mono" style={{color:'var(--green-light)'}}>{v.orderId}</td>
-                <td className="mono">{v.awb}</td>
-                <td style={{color:'var(--text2)'}}>{v.date}</td>
+                <td><span className="tbl-id"><span style={{color:'#22c55e',marginRight:6}}>⊙</span>{v.orderId}</span></td>
+                <td className="tbl-mono">{v.awb}</td>
+                <td style={{color:'#374151'}}>{v.date}</td>
+                <td style={{color:'#6b7280',fontFamily:'JetBrains Mono',fontSize:12}}>{v.id?new Date(v.id).toLocaleTimeString('en-IN',{hour:'2-digit',minute:'2-digit',second:'2-digit'}):'-'}</td>
                 <td>{v.duration}</td>
                 <td>{v.size}</td>
-                <td><span className="chip chip-green">{v.storage}</span></td>
+                <td><span className={`chip ${v.storage==='drive'?'chip-blue':v.storage==='local'?'chip-success':'chip-gray'}`}>{v.storage}</span></td>
+                <td><button className="btn btn-preview">⊞ Preview</button></td>
               </tr>
-            ))}</tbody></table>}
+            ))}</tbody></table>
+            <div className="pagination">
+              <span>Showing 1-{Math.min(8,videos.length)} of {videos.length}</span>
+              <div className="page-btns">
+                <button className="page-btn" disabled>‹</button>
+                <button className="page-btn active">1</button>
+                <button className="page-btn" disabled={videos.length<=8}>›</button>
+              </div>
+              <div className="per-page"><span>Show:</span><select><option>10</option><option>25</option><option>50</option></select><span>/ page</span></div>
+            </div>
+            </>}
       </div>
     </div>
   );
 }
 
-// ============================================================
-// VIDEOS PAGE
-// ============================================================
-function VideosPage({ user, toast }) {
-  const [search,      setSearch]      = useState('');
-  const [dateFilter,  setDateFilter]  = useState('');
-  const [deleteModal, setDeleteModal] = useState(null);
-  const [videos,      setVideos]      = useState(()=>DB.getVideos(user.email));
+// ── Videos Page ───────────────────────────────────────────────────
+function VideosPage({user,toast}){
+  const [search,setSearch]=useState('');
+  const [dateF,setDateF]=useState('');
+  const [storageF,setStorageF]=useState('');
+  const [delModal,setDelModal]=useState(null);
+  const [videos,setVideos]=useState(()=>DB.getVideos(user.email));
+  const [page,setPage]=useState(1);
+  const PER_PAGE=10;
 
-  const filtered = videos.filter(v=>
-    (v.orderId?.toLowerCase().includes(search.toLowerCase())||v.awb?.toLowerCase().includes(search.toLowerCase())) &&
-    (!dateFilter||v.date===dateFilter)
+  const filtered=videos.filter(v=>
+    (!search||(v.orderId?.toLowerCase().includes(search.toLowerCase())||v.awb?.toLowerCase().includes(search.toLowerCase()))) &&
+    (!dateF||v.date===dateF) && (!storageF||v.storage===storageF)
   );
+  const paged=filtered.slice((page-1)*PER_PAGE, page*PER_PAGE);
+  const totalPages=Math.ceil(filtered.length/PER_PAGE);
 
-  const del = (id) => {
-    const updated = videos.filter(v=>v.id!==id);
-    setVideos(updated); DB.saveVideos(user.email, updated);
-    toast('Video deleted','success'); setDeleteModal(null);
-  };
+  const del=(id)=>{const u=videos.filter(v=>v.id!==id);setVideos(u);DB.saveVideos(user.email,u);toast('Video deleted','success');setDelModal(null);};
 
-  return (
+  return(
     <div>
-      <div className="table-wrap">
-        <div className="table-header">
-          <span className="table-title">All Recordings ({filtered.length})</span>
-          <div style={{display:'flex',gap:10,alignItems:'center'}}>
-            <input type="date" className="form-input" style={{padding:'8px 12px',fontSize:13,width:'auto'}} value={dateFilter} onChange={e=>setDateFilter(e.target.value)}/>
-            <div className="search-wrap"><span className="search-icon">🔍</span>
-              <input className="search-input" placeholder="Search Order ID or AWB..." value={search} onChange={e=>setSearch(e.target.value)}/>
-            </div>
+      {/* Filter bar */}
+      <div className="filter-bar">
+        <div className="filter-row">
+          <div className="filter-group">
+            <span className="filter-label">Tracking ID / AWB</span>
+            <input className="filter-input" placeholder="Search..." value={search} onChange={e=>{setSearch(e.target.value);setPage(1);}} style={{width:220}}/>
+          </div>
+          <div className="filter-group">
+            <span className="filter-label">Date</span>
+            <input type="date" className="filter-input" value={dateF} onChange={e=>{setDateF(e.target.value);setPage(1);}}/>
+          </div>
+          <div className="filter-group">
+            <span className="filter-label">Storage</span>
+            <select className="filter-input filter-select" value={storageF} onChange={e=>{setStorageF(e.target.value);setPage(1);}}>
+              <option value="">All Storage</option>
+              <option value="local">Local</option>
+              <option value="drive">Google Drive</option>
+              <option value="download">Downloaded</option>
+            </select>
+          </div>
+          <div className="filter-actions">
+            <button className="btn btn-outline" onClick={()=>{setSearch('');setDateF('');setStorageF('');setPage(1);}}>Reset</button>
+            <button className="btn btn-primary">Apply</button>
           </div>
         </div>
-        {filtered.length===0
-          ? <div className="empty-state"><div className="empty-icon">🎬</div><div className="empty-text">{videos.length===0?'No recordings yet':'No results found'}</div></div>
-          : <table><thead><tr><th>Order ID</th><th>AWB</th><th>Date</th><th>Duration</th><th>Size</th><th>Storage</th><th>Actions</th></tr></thead>
-            <tbody>{filtered.map(v=>(
-              <tr key={v.id}>
-                <td className="mono" style={{color:'var(--green-light)'}}>{v.orderId}</td>
-                <td className="mono">{v.awb}</td>
-                <td style={{color:'var(--text2)'}}>{v.date}</td>
-                <td>{v.duration}</td>
-                <td>{v.size}</td>
-                <td><span className="chip chip-green">{v.storage}</span></td>
-                <td><button className="btn btn-danger btn-sm" onClick={()=>setDeleteModal(v.id)}>🗑</button></td>
-              </tr>
-            ))}</tbody></table>}
       </div>
-      {deleteModal&&<div className="modal-backdrop" onClick={()=>setDeleteModal(null)}>
-        <div className="modal" onClick={e=>e.stopPropagation()}>
+
+      <div className="table-card">
+        <div className="table-card-header">
+          <span className="table-card-title">All Recordings ({filtered.length})</span>
+          <button className="btn btn-outline btn-sm" onClick={()=>toast('Export coming soon','info')}>Export CSV</button>
+        </div>
+        {paged.length===0
+          ? <div className="empty-state"><div className="empty-icon">🎬</div><div className="empty-text">{videos.length===0?'No recordings yet':'No results found'}</div></div>
+          : <><table className="tbl">
+              <thead><tr><th>Tracking ID</th><th>AWB Number</th><th>Date</th><th>Time</th><th>Duration</th><th>Size</th><th>Storage</th><th>Action</th></tr></thead>
+              <tbody>{paged.map(v=>(
+                <tr key={v.id}>
+                  <td><span style={{color:'#22c55e',marginRight:6,fontSize:14}}>⊙</span><span className="tbl-id">{v.orderId}</span></td>
+                  <td className="tbl-mono">{v.awb}</td>
+                  <td style={{color:'#374151'}}>{v.date}</td>
+                  <td style={{color:'#6b7280',fontFamily:'JetBrains Mono',fontSize:12}}>{v.id?new Date(v.id).toLocaleTimeString('en-IN',{hour:'2-digit',minute:'2-digit',second:'2-digit'}):'-'}</td>
+                  <td>{v.duration}</td>
+                  <td>{v.size}</td>
+                  <td><span className={`chip ${v.storage==='drive'?'chip-blue':v.storage==='local'?'chip-success':'chip-gray'}`}>{v.storage}</span></td>
+                  <td>
+                    <div style={{display:'flex',gap:6}}>
+                      <button className="btn btn-preview">⊞ Preview</button>
+                      <button className="btn btn-danger btn-sm" onClick={()=>setDelModal(v.id)}>Delete</button>
+                    </div>
+                  </td>
+                </tr>
+              ))}</tbody>
+            </table>
+            <div className="pagination">
+              <span>Showing {Math.min((page-1)*PER_PAGE+1,filtered.length)}-{Math.min(page*PER_PAGE,filtered.length)} of {filtered.length}</span>
+              <div className="page-btns">
+                <button className="page-btn" onClick={()=>setPage(p=>Math.max(1,p-1))} disabled={page===1}>‹</button>
+                {Array.from({length:Math.min(5,totalPages)},(_,i)=>i+1).map(n=>(
+                  <button key={n} className={`page-btn${page===n?' active':''}`} onClick={()=>setPage(n)}>{n}</button>
+                ))}
+                {totalPages>5&&<button className="page-btn" disabled>...</button>}
+                <button className="page-btn" onClick={()=>setPage(p=>Math.min(totalPages,p+1))} disabled={page===totalPages||totalPages===0}>›</button>
+              </div>
+              <div className="per-page"><span>10 / page</span></div>
+            </div>
+            </>}
+      </div>
+
+      {delModal&&<div className="modal-backdrop" onClick={()=>setDelModal(null)}>
+        <div className="modal-box" onClick={e=>e.stopPropagation()}>
           <div className="modal-title">Delete Recording?</div>
-          <div className="modal-sub">This cannot be undone. The video metadata will be removed.</div>
+          <div className="modal-sub">This will remove the record from VMS. The video file on your device will not be affected.</div>
           <div className="modal-actions">
-            <button className="btn btn-secondary" onClick={()=>setDeleteModal(null)}>Cancel</button>
-            <button className="btn btn-danger" onClick={()=>del(deleteModal)}>Delete</button>
+            <button className="btn btn-outline" onClick={()=>setDelModal(null)}>Cancel</button>
+            <button className="btn btn-danger" onClick={()=>del(delModal)}>Delete</button>
           </div>
         </div>
       </div>}
@@ -987,255 +921,268 @@ function VideosPage({ user, toast }) {
   );
 }
 
-// ============================================================
-// SETTINGS
-// ============================================================
-function SettingsPage({ user, toast, driveToken, driveEmail, onDriveConnect, onDriveDisconnect }) {
-  const [ts,setTs]=useState(true), [audio,setAudio]=useState(true);
-  return (
-    <div className="settings-grid">
-      <div className="settings-section">
-        <div className="settings-title">🎬 Recording Settings</div>
-        {[{l:'Timestamp Overlay',d:'Show date/time on video',s:ts,fn:setTs},{l:'Record Audio',d:'Include microphone audio',s:audio,fn:setAudio}].map((r,i)=>(
-          <div className="setting-row" key={i}>
-            <div className="setting-info"><div className="setting-name">{r.l}</div><div className="setting-desc">{r.d}</div></div>
-            <label className="toggle"><input type="checkbox" checked={r.s} onChange={e=>r.fn(e.target.checked)}/><span className="toggle-slider"></span></label>
-          </div>
-        ))}
-        <div className="setting-row">
-          <div className="setting-info"><div className="setting-name">Video Quality</div><div className="setting-desc">Higher = larger files</div></div>
-          <select className="form-input form-select" style={{width:120,padding:'8px 12px',fontSize:12}}><option>720p HD</option><option>1080p FHD</option><option>480p SD</option></select>
-        </div>
-      </div>
-
-      <div className="settings-section">
-        <div className="settings-title">📂 Google Drive</div>
-        <div style={{background:'var(--bg3)',borderRadius:12,padding:'18px'}}>
-          <div style={{display:'flex',alignItems:'center',gap:12,marginBottom:14}}>
-            <div style={{width:44,height:44,borderRadius:10,background:'rgba(30,144,255,0.15)',border:'1px solid rgba(30,144,255,0.3)',display:'flex',alignItems:'center',justifyContent:'center',fontSize:22,flexShrink:0}}>📂</div>
-            <div>
-              <div style={{fontWeight:700,fontSize:14}}>Google Drive Sync</div>
-              <div style={{fontSize:12,color:'var(--text2)',marginTop:2}}>{driveToken?`Connected: ${driveEmail}`:'Not connected'}</div>
-            </div>
-            <div style={{marginLeft:'auto'}}>{driveToken?<span className="badge badge-green">● Live</span>:<span className="badge badge-amber">Off</span>}</div>
-          </div>
-          {driveToken
-            ? <><div style={{fontSize:12,color:'var(--text2)',marginBottom:12,padding:'10px 12px',background:'rgba(10,138,97,0.08)',borderRadius:8}}>✅ Videos upload to <strong style={{color:'var(--green-light)'}}>My Drive → Zeespares Packing Videos</strong></div>
-                <button className="btn btn-danger btn-sm" style={{width:'100%'}} onClick={onDriveDisconnect}>Disconnect</button></>
-            : <><div style={{fontSize:12,color:'var(--text2)',marginBottom:12,lineHeight:1.6}}>Connect your Google account to automatically backup all packing videos to Google Drive.</div>
-                {user.plan==='trial'
-                  ? <div style={{fontSize:12,color:'var(--amber)',padding:'10px',background:'rgba(255,165,2,0.08)',borderRadius:8}}>⚠️ Google Drive requires Pro or Business plan. <strong>Upgrade to unlock.</strong></div>
-                  : <button className="btn btn-primary" style={{width:'100%',background:'var(--blue)'}} onClick={onDriveConnect}>🔗 Connect Google Drive</button>}</>}
-        </div>
-      </div>
-
-      <div className="settings-section">
-        <div className="settings-title">👤 Account Info</div>
-        {[{l:'Name',v:user.name},{l:'Email',v:user.email},{l:'Role',v:user.role.toUpperCase()},{l:'Plan',v:(PLANS_CONFIG.find(p=>p.id===user.plan)||{}).name||user.plan}].map((r,i)=>(
-          <div className="setting-row" key={i}>
-            <div className="setting-info"><div className="setting-name">{r.l}</div></div>
-            <span style={{fontSize:13,fontWeight:600,color:'var(--green-light)'}}>{r.v}</span>
-          </div>
-        ))}
-        {user.plan==='trial'&&<div style={{marginTop:12,padding:'10px 12px',background:'rgba(255,165,2,0.08)',border:'1px solid rgba(255,165,2,0.3)',borderRadius:9,fontSize:12,color:'var(--amber)'}}>
-          Trial expires: {new Date(user.trialExpiry).toLocaleDateString('en-IN')} · {Math.max(0,100-user.videoCount)} videos remaining
-        </div>}
-      </div>
-
-      <div className="settings-section">
-        <div className="settings-title">🔒 Security</div>
-        <div className="setting-row">
-          <div className="setting-info"><div className="setting-name">Password</div><div className="setting-desc">Change your login password</div></div>
-          <button className="btn btn-secondary btn-sm" onClick={()=>toast('Password change coming soon','info')}>Change</button>
-        </div>
-        <div className="setting-row">
-          <div className="setting-info"><div className="setting-name">Session</div><div className="setting-desc">You are currently logged in</div></div>
-          <span className="badge badge-green">● Active</span>
-        </div>
-      </div>
-    </div>
-  );
-}
-
-// ============================================================
-// ANALYTICS
-// ============================================================
-function AnalyticsPage({ user }) {
-  const videos = DB.getVideos(user.email);
-  const last7 = Array.from({length:7},(_,i)=>{
+// ── Analytics ─────────────────────────────────────────────────────
+function AnalyticsPage({user}){
+  const videos=DB.getVideos(user.email);
+  const last7=Array.from({length:7},(_,i)=>{
     const d=new Date(); d.setDate(d.getDate()-6+i);
     const ds=d.toISOString().split('T')[0];
-    return {label:['Sun','Mon','Tue','Wed','Thu','Fri','Sat'][d.getDay()], count:videos.filter(v=>v.date===ds).length};
+    return{label:['S','M','T','W','T','F','S'][d.getDay()],day:ds,count:videos.filter(v=>v.date===ds).length};
   });
-  const maxBar = Math.max(...last7.map(d=>d.count),1);
-  const driveCount = videos.filter(v=>v.storage==='drive').length;
-  const localCount = videos.filter(v=>v.storage==='local').length;
-  const dlCount    = videos.filter(v=>v.storage==='download').length;
-  return (
+  const maxBar=Math.max(...last7.map(d=>d.count),1);
+  const driveC=videos.filter(v=>v.storage==='drive').length;
+  const localC=videos.filter(v=>v.storage==='local').length;
+  const dlC=videos.filter(v=>v.storage==='download').length;
+
+  return(
     <div>
-      <div className="stats-grid" style={{marginBottom:20}}>
-        {[{icon:'📹',val:videos.length,label:'Total Videos',sub:'All time'},
-          {icon:'🛡️',val:videos.length,label:'Orders Protected',sub:'With video proof'},
-          {icon:'📂',val:driveCount,label:'Drive Uploads',sub:'Google Drive'},
-          {icon:'💾',val:localCount+dlCount,label:'Local Saves',sub:'On your computer'},
+      <div className="stats-row">
+        {[{icon:'📹',val:videos.length,label:'Total Videos',iconBg:'#eff6ff'},
+          {icon:'🛡️',val:videos.length,label:'Protected Orders',iconBg:'#f0fdf4'},
+          {icon:'📂',val:driveC,label:'Drive Uploads',iconBg:'#eff6ff'},
+          {icon:'💾',val:localC+dlC,label:'Local Saves',iconBg:'#fdf4ff'},
         ].map((s,i)=>(
-          <div className="stat-card" key={i}><div className="stat-icon">{s.icon}</div><div className="stat-value">{s.val}</div><div className="stat-label">{s.label}</div><div className="stat-change">{s.sub}</div></div>
+          <div className="stat-box" key={i}>
+            <div className="stat-box-top">
+              <div><div className="stat-val">{s.val}</div><div className="stat-lbl">{s.label}</div></div>
+              <div className="stat-icon-box" style={{background:s.iconBg}}><span style={{fontSize:18}}>{s.icon}</span></div>
+            </div>
+          </div>
         ))}
       </div>
-      <div style={{display:'grid',gridTemplateColumns:'2fr 1fr',gap:20,marginBottom:20}}>
-        <div className="chart-area">
-          <div className="panel-title" style={{marginBottom:20}}>📅 Recordings — Last 7 Days</div>
-          <div className="chart-bars">
-            {last7.map((d,i)=>(
-              <div className="bar-wrap" key={i}>
-                <div className="bar-val">{d.count}</div>
-                <div className="bar" style={{height:`${Math.max(4,(d.count/maxBar)*140)}px`,background:'linear-gradient(180deg,var(--green-light),var(--green-dark))'}}></div>
-                <div className="bar-label">{d.label}</div>
+
+      <div style={{display:'grid',gridTemplateColumns:'2fr 1fr',gap:14,marginBottom:14}}>
+        <div className="card">
+          <div className="card-header"><span className="card-title">Recordings — Last 7 Days</span></div>
+          <div className="card-body">
+            <div style={{display:'flex',alignItems:'flex-end',gap:10,height:140,paddingTop:10}}>
+              {last7.map((d,i)=>(
+                <div key={i} style={{flex:1,display:'flex',flexDirection:'column',alignItems:'center',gap:5}}>
+                  <span style={{fontSize:11,color:'#6b7280',fontWeight:600}}>{d.count}</span>
+                  <div style={{width:'100%',height:Math.max(4,(d.count/maxBar)*110)+'px',background:d.count>0?'var(--accent)':'#e2e5ed',borderRadius:'4px 4px 0 0',transition:'height .3s'}}></div>
+                  <span style={{fontSize:11,color:'#6b7280',fontWeight:600}}>{d.label}</span>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+        <div className="card">
+          <div className="card-header"><span className="card-title">Storage Breakdown</span></div>
+          <div className="card-body">
+            {[{l:'Google Drive',n:driveC,col:'var(--accent)'},{l:'Local Folder',n:localC,col:'#22c55e'},{l:'Downloaded',n:dlC,col:'#f59e0b'}].map((s,i)=>(
+              <div key={i} style={{marginBottom:14}}>
+                <div style={{display:'flex',justifyContent:'space-between',fontSize:12,marginBottom:5}}>
+                  <span style={{fontWeight:600,color:'#374151'}}>{s.l}</span>
+                  <span style={{color:'#6b7280'}}>{s.n} videos</span>
+                </div>
+                <div className="progress-bar"><div className="progress-fill" style={{width:videos.length?`${(s.n/Math.max(videos.length,1))*100}%`:'0%',background:s.col}}></div></div>
               </div>
             ))}
           </div>
         </div>
-        <div className="storage-info">
-          <div className="panel-title" style={{marginBottom:16}}>💾 Storage Breakdown</div>
-          {[{l:'Google Drive',n:driveCount,col:'var(--blue)'},{l:'Local Folder',n:localCount,col:'var(--green)'},{l:'Downloaded',n:dlCount,col:'var(--amber)'}].map((s,i)=>(
-            <div key={i} style={{marginBottom:14}}>
-              <div style={{display:'flex',justifyContent:'space-between',fontSize:13,marginBottom:5}}><span style={{fontWeight:600}}>{s.l}</span><span style={{color:'var(--text2)'}}>{s.n} videos</span></div>
-              <div className="progress-bar"><div className="progress-fill" style={{width:videos.length?`${(s.n/Math.max(videos.length,1))*100}%`:'0%',background:s.col}}></div></div>
-            </div>
-          ))}
-        </div>
       </div>
-      <div className="table-wrap">
-        <div className="table-header"><span className="table-title">All Recordings</span></div>
+
+      <div className="table-card">
+        <div className="table-card-header"><span className="table-card-title">All Recordings</span></div>
         {videos.length===0
-          ? <div className="empty-state"><div className="empty-icon">📊</div><div className="empty-text">No recordings yet</div></div>
-          : <table><thead><tr><th>Order ID</th><th>AWB</th><th>Date</th><th>Duration</th><th>Storage</th></tr></thead>
+          ? <div className="empty-state"><div className="empty-icon">📊</div><div className="empty-text">No data yet</div></div>
+          : <table className="tbl"><thead><tr><th>Tracking ID</th><th>AWB</th><th>Date</th><th>Duration</th><th>Storage</th></tr></thead>
             <tbody>{videos.slice(0,20).map(v=>(
-              <tr key={v.id}><td className="mono" style={{color:'var(--green-light)'}}>{v.orderId}</td><td className="mono">{v.awb}</td><td style={{color:'var(--text2)'}}>{v.date}</td><td>{v.duration}</td><td><span className="chip chip-green">{v.storage}</span></td></tr>
+              <tr key={v.id}><td><span className="tbl-id">{v.orderId}</span></td><td className="tbl-mono">{v.awb}</td><td style={{color:'#374151'}}>{v.date}</td><td>{v.duration}</td><td><span className={`chip ${v.storage==='drive'?'chip-blue':v.storage==='local'?'chip-success':'chip-gray'}`}>{v.storage}</span></td></tr>
             ))}</tbody></table>}
       </div>
     </div>
   );
 }
 
-// ============================================================
-// PLANS PAGE — Real Razorpay
-// ============================================================
-function PlansPage({ user, toast, onUpgrade }) {
-  const [loading, setLoading] = useState(null);
-
-  const handleBuy = (plan) => {
-    if (user.plan === plan.id) { toast('You are already on this plan','info'); return; }
-    if (!window.Razorpay) { toast('Razorpay is loading, please try again in a moment','error'); return; }
-    setLoading(plan.id);
-    const options = {
-      key: RAZORPAY_KEY,
-      amount: plan.price * 100,
-      currency: 'INR',
-      name: 'Zeespares VMS',
-      description: `${plan.name} Plan — ₹${plan.price}/month`,
-      handler: (response) => {
-        toast(`Payment successful! ID: ${response.razorpay_payment_id}`,'success');
-        onUpgrade(plan.id);
-        setLoading(null);
-      },
-      prefill: { name: user.name, email: user.email },
-      notes: { plan: plan.id },
-      theme: { color: '#0A8A61' },
-      modal: { ondismiss: () => setLoading(null) }
-    };
-    const rzp = new window.Razorpay(options);
-    rzp.on('payment.failed', r => { toast(`Payment failed: ${r.error.description}`,'error'); setLoading(null); });
-    rzp.open();
-  };
-
-  return (
-    <div>
-      <div style={{textAlign:'center',marginBottom:32}}>
-        <div style={{fontSize:28,fontWeight:800,marginBottom:8,letterSpacing:-0.5}}>Choose Your Plan</div>
-        <div style={{color:'var(--text2)',fontSize:15}}>Protect every order. No more fake return losses.</div>
-      </div>
-      <div className="plans-grid">
-        {PLANS_CONFIG.map(p=>(
-          <div key={p.id} className={`plan-card${p.popular?' popular':''}`}>
-            {p.popular&&<div className="plan-popular-badge">MOST POPULAR</div>}
-            <div className="plan-name" style={{color:p.color}}>{p.name}</div>
-            <div className="plan-price">
-              {p.price===0?<>Free<span style={{display:'block',fontSize:14,fontWeight:500,color:'var(--text2)',marginTop:2}}>7 days trial</span></>
-                :<><sup>{p.currency}</sup>{p.price.toLocaleString('en-IN')}<span>/mo</span></>}
-            </div>
-            <div className="plan-desc">{p.desc}</div>
-            <ul className="plan-features">
-              {p.features.map((f,i)=>(
-                <li key={i}><span className={f.startsWith('✓')||!f.startsWith('✗')?'feat-check':'feat-x'}>{f.startsWith('✓')||f.startsWith('✗')?f[0]:'✓'}</span><span>{f.replace(/^[✓✗]\s*/,'')}</span></li>
-              ))}
-            </ul>
-            {user.plan===p.id
-              ? <button className="btn btn-secondary" style={{width:'100%'}} disabled>✓ Current Plan</button>
-              : p.price===0
-                ? <button className="btn btn-secondary" style={{width:'100%'}} disabled>Trial Active on Signup</button>
-                : <button className="btn btn-primary" style={{background:p.color,width:'100%',opacity:loading===p.id?0.7:1}}
-                    onClick={()=>handleBuy(p)} disabled={!!loading}>
-                    {loading===p.id?'Opening payment...`':'💳 Subscribe — ₹'+p.price+'/mo'}
-                  </button>}
-          </div>
-        ))}
-      </div>
-      <div style={{marginTop:28,background:'var(--bg2)',border:'1px solid var(--border)',borderRadius:18,padding:'22px 28px'}}>
-        <div style={{display:'flex',alignItems:'center',gap:12,marginBottom:14}}>
-          <span style={{fontSize:22}}>💳</span>
-          <div><div style={{fontWeight:700,fontSize:15}}>Powered by Razorpay</div><div style={{fontSize:13,color:'var(--text2)'}}>100% secure · PCI DSS compliant · Trusted by 8M+ businesses in India</div></div>
-        </div>
-        <div style={{display:'flex',gap:10,flexWrap:'wrap'}}>
-          {['UPI / GPay / PhonePe','Credit Card','Debit Card','Net Banking','Paytm','EMI'].map(m=><span key={m} className="chip chip-green">{m}</span>)}
-        </div>
-      </div>
-      <div style={{marginTop:16,background:'var(--bg2)',border:'1px solid var(--border)',borderRadius:18,padding:'22px 28px'}}>
-        <div style={{fontWeight:700,fontSize:15,marginBottom:12}}>💡 Why sellers need Zeespares VMS</div>
-        <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:12}}>
-          {[['🚫 Fake Returns','Customer claims wrong item sent — video proves what was packed'],
-            ['📦 RTO Fraud','Courier marks delivered but customer denies — video is proof'],
-            ['⚖️ Marketplace Disputes','Amazon/Flipkart disputes resolved faster with video evidence'],
-            ['💰 Save Money','Average seller saves ₹5,000-20,000/month in fake claims']].map(([t,d],i)=>(
-            <div key={i} style={{padding:'12px 14px',background:'var(--bg3)',borderRadius:9}}>
-              <div style={{fontWeight:700,fontSize:13,marginBottom:4}}>{t}</div>
-              <div style={{fontSize:12,color:'var(--text2)',lineHeight:1.5}}>{d}</div>
+// ── Settings ──────────────────────────────────────────────────────
+function SettingsPage({user,toast,driveToken,driveEmail,onDriveConnect,onDriveDisconnect}){
+  const [ts,setTs]=useState(true),[audio,setAudio]=useState(true);
+  const plan=PLANS.find(p=>p.id===user.plan)||PLANS[0];
+  return(
+    <div className="settings-grid">
+      <div className="card">
+        <div className="card-header"><span className="card-title">Recording Settings</span></div>
+        <div className="card-body">
+          {[{l:'Timestamp Overlay',d:'Show date/time burned into video',s:ts,fn:setTs},{l:'Record Audio',d:'Include microphone audio in recording',s:audio,fn:setAudio}].map((r,i)=>(
+            <div className="setting-row" key={i}>
+              <div><div className="setting-name">{r.l}</div><div className="setting-desc">{r.d}</div></div>
+              <label className="toggle"><input type="checkbox" checked={r.s} onChange={e=>r.fn(e.target.checked)}/><span className="toggle-slider"></span></label>
             </div>
           ))}
+          <div className="setting-row">
+            <div><div className="setting-name">Video Quality</div><div className="setting-desc">720p recommended (~6MB/min)</div></div>
+            <select className="filter-input filter-select" style={{width:120}}>
+              <option>720p HD</option><option>1080p FHD</option><option>480p SD</option>
+            </select>
+          </div>
+        </div>
+      </div>
+
+      <div className="card">
+        <div className="card-header"><span className="card-title">Google Drive Integration</span></div>
+        <div className="card-body">
+          <div className={`drive-card${driveToken?' drive-card-connected':''}`}>
+            <div style={{display:'flex',alignItems:'center',gap:12,marginBottom:14}}>
+              <div style={{width:42,height:42,borderRadius:8,background:driveToken?'#dcfce7':'#eff6ff',border:`1px solid ${driveToken?'#bbf7d0':'#bfdbfe'}`,display:'flex',alignItems:'center',justifyContent:'center',fontSize:20,flexShrink:0}}>📂</div>
+              <div>
+                <div style={{fontWeight:700,fontSize:14,color:'#1a1a2e'}}>Google Drive Sync</div>
+                <div style={{fontSize:12,color:'#6b7280',marginTop:2}}>{driveToken?`Connected: ${driveEmail}`:'Not connected'}</div>
+              </div>
+              <div style={{marginLeft:'auto'}}>{driveToken?<span className="chip chip-success"><span className="dot dot-success"></span>Live</span>:<span className="chip chip-gray">Offline</span>}</div>
+            </div>
+            {driveToken
+              ?<><div style={{fontSize:12,color:'#374151',marginBottom:12,padding:'8px 12px',background:'#f0fdf4',borderRadius:6,border:'1px solid #bbf7d0'}}>✅ Videos auto-upload to <strong>My Drive → OpenVMS Packing Videos</strong></div>
+                <button className="btn btn-danger btn-sm" style={{width:'100%'}} onClick={onDriveDisconnect}>Disconnect</button></>
+              :<>{user.plan==='trial'
+                  ?<div style={{fontSize:12,color:'#b45309',padding:'10px',background:'#fffbeb',borderRadius:6,border:'1px solid #fde68a'}}>⚠ Google Drive requires Pro or Business plan. <strong>Upgrade to unlock.</strong></div>
+                  :<><div style={{fontSize:12,color:'#6b7280',marginBottom:12,lineHeight:1.6}}>Connect your Google account to automatically sync packing videos to Drive.</div>
+                    <button className="btn btn-primary" style={{width:'100%'}} onClick={onDriveConnect}>🔗 Connect Google Drive</button></>}</>}
+          </div>
+        </div>
+      </div>
+
+      <div className="card">
+        <div className="card-header"><span className="card-title">Account Information</span></div>
+        <div className="card-body">
+          {[{l:'Name',v:user.name},{l:'Email',v:user.email},{l:'Role',v:user.role.toUpperCase()},{l:'Plan',v:plan.name},{l:'Videos Used',v:user.videoCount||0}].map((r,i)=>(
+            <div className="setting-row" key={i}>
+              <div className="setting-name">{r.l}</div>
+              <span style={{fontSize:13,fontWeight:600,color:'var(--accent)'}}>{r.v}</span>
+            </div>
+          ))}
+          {user.plan==='trial'&&<div style={{marginTop:12,padding:'10px',background:'#fffbeb',border:'1px solid #fde68a',borderRadius:6,fontSize:12,color:'#92400e'}}>Trial expires: {new Date(user.trialExpiry).toLocaleDateString('en-IN')} · {Math.max(0,100-(user.videoCount||0))} videos left</div>}
+        </div>
+      </div>
+
+      <div className="card">
+        <div className="card-header"><span className="card-title">Subscription</span></div>
+        <div className="card-body">
+          <div style={{display:'flex',justifyContent:'space-between',alignItems:'center',marginBottom:8}}>
+            <span style={{fontWeight:600,fontSize:14}}>Current Plan</span>
+            <span className="chip chip-blue">{plan.name.toUpperCase()}</span>
+          </div>
+          <div style={{fontSize:12,color:'#6b7280',marginBottom:12}}>{user.plan==='trial'?'7-day free trial':user.plan==='pro'?'₹999/month':user.plan==='business'?'₹2499/month':'—'}</div>
+          <div className="progress-bar" style={{marginBottom:8}}><div className="progress-fill" style={{width:(user.plan==='trial'?Math.min(100,Math.round(((user.videoCount||0)/100)*100)):35)+'%'}}></div></div>
+          <div style={{fontSize:11,color:'#6b7280',marginBottom:14}}>{user.videoCount||0} / {plan.videoLimit>=9999?'Unlimited':plan.videoLimit} videos used</div>
+          {user.plan!=='business'&&<button className="btn btn-primary" style={{width:'100%'}} onClick={()=>window._openPlans&&window._openPlans()}>⬆ Upgrade Plan</button>}
         </div>
       </div>
     </div>
   );
 }
 
-// ============================================================
-// ADMIN PAGE
-// ============================================================
-function AdminPage({ toast }) {
-  const allUsers = Object.values(DB.getUsers());
-  return (
+// ── Plans ─────────────────────────────────────────────────────────
+function PlansPage({user,toast,onUpgrade}){
+  const [loading,setLoading]=useState(null);
+
+  const buy=(plan)=>{
+    if(user.plan===plan.id){toast('You are already on this plan','info');return;}
+    if(!window.Razorpay){toast('Razorpay loading, please try again','error');return;}
+    setLoading(plan.id);
+    const opts={
+      key:RAZORPAY_KEY,amount:plan.price*100,currency:'INR',
+      name:'OpenVMS',description:`${plan.name} — ₹${plan.price}/month`,
+      handler:(r)=>{toast(`Payment successful! ID: ${r.razorpay_payment_id}`,'success');onUpgrade(plan.id);setLoading(null);},
+      prefill:{name:user.name,email:user.email},
+      theme:{color:'#2874f0'},
+      modal:{ondismiss:()=>setLoading(null)}
+    };
+    const rzp=new window.Razorpay(opts);
+    rzp.on('payment.failed',r=>{toast(`Payment failed: ${r.error.description}`,'error');setLoading(null);});
+    rzp.open();
+  };
+
+  return(
     <div>
-      <div className="stats-grid" style={{marginBottom:24}}>
-        {[{icon:'👥',val:allUsers.length,label:'Total Users',sub:'Registered accounts'},
-          {icon:'💰',val:`₹${allUsers.filter(u=>u.plan==='pro').length*999 + allUsers.filter(u=>u.plan==='business').length*2499}`,label:'MRR',sub:'Monthly recurring'},
-          {icon:'📹',val:allUsers.reduce((s,u)=>s+(u.videoCount||0),0),label:'Total Videos',sub:'All users'},
-          {icon:'🆓',val:allUsers.filter(u=>u.plan==='trial').length,label:'On Trial',sub:'Need conversion'},
-        ].map((s,i)=>(
-          <div className="stat-card" key={i}><div className="stat-icon">{s.icon}</div><div className="stat-value">{s.val}</div><div className="stat-label">{s.label}</div><div className="stat-change">{s.sub}</div></div>
+      <div style={{textAlign:'center',marginBottom:28}}>
+        <div style={{fontSize:24,fontWeight:800,marginBottom:6,color:'#1a1a2e'}}>Choose Your Plan</div>
+        <div style={{color:'#6b7280',fontSize:14}}>Protect every order. Stop fake return losses.</div>
+      </div>
+      <div className="plans-grid">
+        {PLANS.map(p=>(
+          <div key={p.id} className={`plan-box${p.popular?' popular':''}`}>
+            {p.popular&&<div className="plan-popular-tag">MOST POPULAR</div>}
+            <div className="plan-name" style={{color:p.color}}>{p.name}</div>
+            <div className="plan-price">
+              {p.price===0?<>Free<span style={{display:'block',fontSize:12,fontWeight:500,color:'#6b7280'}}>7 days trial</span></>:<><sup>₹</sup>{p.price.toLocaleString('en-IN')}<span>/mo</span></>}
+            </div>
+            <div className="plan-desc">{p.desc}</div>
+            <ul className="plan-features">
+              {p.features.map((f,i)=>(
+                <li key={i}><span className={f.startsWith('✓')?'pf-yes':'pf-no'}>{f.startsWith('✓')||f.startsWith('✗')?f[0]:'✓'}</span><span style={{color:'#374151'}}>{f.replace(/^[✓✗]\s*/,'')}</span></li>
+              ))}
+            </ul>
+            {user.plan===p.id
+              ?<button className="btn btn-outline" style={{width:'100%'}} disabled>✓ Current Plan</button>
+              :p.price===0?<button className="btn btn-outline" style={{width:'100%'}} disabled>Active on Signup</button>
+              :<button className="btn btn-primary" style={{background:p.color,borderColor:p.color,width:'100%',opacity:loading===p.id?.7:1}} onClick={()=>buy(p)} disabled={!!loading}>
+                {loading===p.id?'Opening payment...`':'💳 Subscribe — ₹'+p.price+'/mo'}
+              </button>}
+          </div>
         ))}
       </div>
-      <div className="table-wrap">
-        <div className="table-header"><span className="table-title">Registered Users ({allUsers.length})</span></div>
-        {allUsers.length===0
-          ? <div className="empty-state"><div className="empty-icon">👥</div><div className="empty-text">No users yet</div></div>
-          : <table><thead><tr><th>Name</th><th>Email</th><th>Plan</th><th>Videos</th><th>Joined</th></tr></thead>
-            <tbody>{allUsers.map((u,i)=>(
+
+      <div className="card" style={{marginTop:20}}>
+        <div className="card-body">
+          <div style={{display:'flex',alignItems:'center',gap:10,marginBottom:12}}>
+            <span style={{fontSize:20}}>💳</span>
+            <div><div style={{fontWeight:700,fontSize:14}}>Powered by Razorpay</div><div style={{fontSize:12,color:'#6b7280'}}>100% secure · PCI DSS compliant · Trusted by 8M+ businesses</div></div>
+          </div>
+          <div style={{display:'flex',gap:8,flexWrap:'wrap'}}>
+            {['UPI / GPay / PhonePe','Credit Card','Debit Card','Net Banking','Paytm','EMI'].map(m=><span key={m} className="chip chip-blue">{m}</span>)}
+          </div>
+        </div>
+      </div>
+
+      <div className="card" style={{marginTop:14}}>
+        <div className="card-header"><span className="card-title">Why Sellers Need VMS</span></div>
+        <div className="card-body">
+          <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:12}}>
+            {[['🚫 Fake Returns','Customer claims wrong item — your video proves what was packed'],
+              ['📦 RTO Fraud','Courier marks delivered but customer denies — video is evidence'],
+              ['⚖️ Marketplace Disputes','Amazon/Flipkart disputes resolved faster with proof'],
+              ['💰 Save Money','Average seller saves ₹5,000-20,000/month in fake claims']].map(([t,d],i)=>(
+              <div key={i} style={{padding:'12px',background:'#f8fafc',borderRadius:6,border:'1px solid #e2e5ed'}}>
+                <div style={{fontWeight:700,fontSize:13,marginBottom:4,color:'#1a1a2e'}}>{t}</div>
+                <div style={{fontSize:12,color:'#6b7280',lineHeight:1.5}}>{d}</div>
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ── Admin ─────────────────────────────────────────────────────────
+function AdminPage(){
+  const users=Object.values(DB.getUsers());
+  return(
+    <div>
+      <div className="stats-row">
+        {[{icon:'👥',val:users.length,label:'Total Users',iconBg:'#eff6ff'},
+          {icon:'💰',val:`₹${users.filter(u=>u.plan==='pro').length*999+users.filter(u=>u.plan==='business').length*2499}`,label:'MRR',iconBg:'#f0fdf4'},
+          {icon:'🆓',val:users.filter(u=>u.plan==='trial').length,label:'On Trial',iconBg:'#fffbeb'},
+          {icon:'📹',val:users.reduce((s,u)=>s+(u.videoCount||0),0),label:'Total Videos',iconBg:'#fdf4ff'},
+        ].map((s,i)=>(
+          <div className="stat-box" key={i}>
+            <div className="stat-box-top"><div><div className="stat-val">{s.val}</div><div className="stat-lbl">{s.label}</div></div><div className="stat-icon-box" style={{background:s.iconBg}}><span style={{fontSize:18}}>{s.icon}</span></div></div>
+          </div>
+        ))}
+      </div>
+      <div className="table-card">
+        <div className="table-card-header"><span className="table-card-title">Registered Users ({users.length})</span></div>
+        {users.length===0?<div className="empty-state"><div className="empty-icon">👥</div><div className="empty-text">No users yet</div></div>
+          :<table className="tbl"><thead><tr><th>Name</th><th>Email</th><th>Plan</th><th>Videos</th><th>Joined</th><th>Trial Expiry</th></tr></thead>
+            <tbody>{users.map((u,i)=>(
               <tr key={i}>
                 <td style={{fontWeight:600}}>{u.name}</td>
-                <td style={{fontSize:12,color:'var(--text2)'}}>{u.email}</td>
-                <td><span className={`badge ${u.plan==='business'?'badge-amber':u.plan==='pro'?'badge-green':'badge-blue'}`}>{u.plan.toUpperCase()}</span></td>
-                <td className="mono">{u.videoCount||0}</td>
-                <td style={{color:'var(--text2)'}}>{new Date(u.createdAt).toLocaleDateString('en-IN')}</td>
+                <td style={{color:'#6b7280',fontSize:12}}>{u.email}</td>
+                <td><span className={`chip ${u.plan==='business'?'chip-warning':u.plan==='pro'?'chip-blue':'chip-gray'}`}>{u.plan.toUpperCase()}</span></td>
+                <td className="tbl-mono">{u.videoCount||0}</td>
+                <td style={{color:'#6b7280'}}>{new Date(u.createdAt).toLocaleDateString('en-IN')}</td>
+                <td style={{color:'#6b7280'}}>{u.plan==='trial'?new Date(u.trialExpiry).toLocaleDateString('en-IN'):'—'}</td>
               </tr>
             ))}</tbody></table>}
       </div>
@@ -1243,157 +1190,194 @@ function AdminPage({ toast }) {
   );
 }
 
-// ============================================================
-// MAIN APP
-// ============================================================
-function App() {
-  const [user,       setUser]       = useState(()=>DB.getSession());
-  const [page,       setPage]       = useState('dashboard');
-  const [toastData,  setToastData]  = useState(null);
-  const [driveToken, setDriveToken] = useState(()=>sessionStorage.getItem('drive_token')||'');
-  const [driveEmail, setDriveEmail] = useState(()=>sessionStorage.getItem('drive_email')||'');
+// ── Main App ──────────────────────────────────────────────────────
+function App(){
+  const [user,setUser]=useState(()=>DB.getSession());
+  const [page,setPage]=useState('dashboard');
+  const [sideOpen,setSideOpen]=useState({scans:true,operator:false});
+  const [toast,setToast]=useState(null);
+  const [driveToken,setDriveToken]=useState(()=>sessionStorage.getItem('drive_token')||'');
+  const [driveEmail,setDriveEmail]=useState(()=>sessionStorage.getItem('drive_email')||'');
 
-  const toast = (msg, type='success') => setToastData({msg, type, key:Date.now()});
+  const showToast=(msg,type='success')=>setToast({msg,type,key:Date.now()});
 
   // Load Razorpay
   useEffect(()=>{
-    if(!document.getElementById('rzp-script')){
-      const s=document.createElement('script'); s.id='rzp-script';
-      s.src='https://checkout.razorpay.com/v1/checkout.js'; s.async=true;
+    if(!document.getElementById('rzp-js')){
+      const s=document.createElement('script');s.id='rzp-js';
+      s.src='https://checkout.razorpay.com/v1/checkout.js';s.async=true;
       document.head.appendChild(s);
     }
+    window._openPlans=()=>setPage('plans');
   },[]);
 
-  // Handle Google OAuth callback
+  // Google OAuth callback
   useEffect(()=>{
-    const hash=window.location.hash;
-    if(hash&&hash.includes('access_token')){
-      const p=new URLSearchParams(hash.substring(1));
+    const h=window.location.hash;
+    if(h&&h.includes('access_token')){
+      const p=new URLSearchParams(h.substring(1));
       const token=p.get('access_token');
       if(token){
         fetch('https://www.googleapis.com/oauth2/v2/userinfo',{headers:{Authorization:`Bearer ${token}`}})
           .then(r=>r.json()).then(info=>{
-            setDriveToken(token); setDriveEmail(info.email||'');
-            sessionStorage.setItem('drive_token',token);
-            sessionStorage.setItem('drive_email',info.email||'');
-            toast(`Google Drive connected: ${info.email}`,'success');
-          }).catch(()=>{ setDriveToken(token); sessionStorage.setItem('drive_token',token); toast('Google Drive connected!','success'); });
+            setDriveToken(token);setDriveEmail(info.email||'');
+            sessionStorage.setItem('drive_token',token);sessionStorage.setItem('drive_email',info.email||'');
+            showToast(`Google Drive connected: ${info.email}`,'success');
+          }).catch(()=>{setDriveToken(token);sessionStorage.setItem('drive_token',token);showToast('Google Drive connected!','success');});
         window.history.replaceState({},document.title,window.location.pathname);
       }
     }
   },[]);
 
-  const connectDrive = () => {
-    const params=new URLSearchParams({client_id:GOOGLE_CLIENT_ID,redirect_uri:window.location.origin+window.location.pathname,response_type:'token',scope:GOOGLE_SCOPES,state:'drive'});
-    window.location.href=`https://accounts.google.com/o/oauth2/v2/auth?${params}`;
+  const connectDrive=()=>{
+    const p=new URLSearchParams({client_id:GOOGLE_CLIENT_ID,redirect_uri:window.location.origin+window.location.pathname,response_type:'token',scope:GOOGLE_SCOPES,state:'drive'});
+    window.location.href=`https://accounts.google.com/o/oauth2/v2/auth?${p}`;
+  };
+  const disconnectDrive=()=>{
+    setDriveToken('');setDriveEmail('');
+    sessionStorage.removeItem('drive_token');sessionStorage.removeItem('drive_email');sessionStorage.removeItem('drive_fid');
+    showToast('Google Drive disconnected','info');
   };
 
-  const disconnectDrive = () => {
-    setDriveToken(''); setDriveEmail('');
-    sessionStorage.removeItem('drive_token'); sessionStorage.removeItem('drive_email'); sessionStorage.removeItem('drive_folder_id');
-    toast('Google Drive disconnected','success');
-  };
-
-  const handleVideoSaved = (newVid) => {
+  const handleVideoSaved=(vid)=>{
     const users=DB.getUsers();
     if(users[user.email]){
       users[user.email].videoCount=(users[user.email].videoCount||0)+1;
       DB.saveUsers(users);
-      setUser(prev=>{const u={...prev,videoCount:(prev.videoCount||0)+1}; DB.saveSession(u); return u;});
+      setUser(prev=>{const u={...prev,videoCount:(prev.videoCount||0)+1};DB.saveSession(u);return u;});
     }
   };
 
-  const handleUpgrade = (planId) => {
+  const handleUpgrade=(planId)=>{
     const users=DB.getUsers();
-    if(users[user.email]){ users[user.email].plan=planId; DB.saveUsers(users); }
-    const updated={...user,plan:planId};
-    setUser(updated); DB.saveSession(updated);
-    setPage('dashboard');
+    if(users[user.email]){users[user.email].plan=planId;DB.saveUsers(users);}
+    const u={...user,plan:planId};setUser(u);DB.saveSession(u);setPage('dashboard');
   };
 
-  const handleLogin = (u) => { setUser(u); setPage('dashboard'); };
+  if(!user) return <AuthPage onLogin={u=>{setUser(u);setPage('dashboard');}}/>;
 
-  const handleLogout = () => { DB.clearSession(); setUser(null); setPage('dashboard'); };
+  const isAdmin=user.role==='admin';
+  const plan=PLANS.find(p=>p.id===user.plan)||PLANS[0];
 
-  if(!user) return <AuthPage onLogin={handleLogin}/>;
+  const titles={dashboard:'Dashboard',scans:'Scans',videos:'My Videos',analytics:'Analytics',settings:'Settings',plans:'Upgrade Plan',admin:'Admin'};
 
-  const isAdmin = user.role==='admin';
-  const navItems = isAdmin ? [
-    {id:'dashboard',icon:'🏠',label:'Dashboard'},
-    {id:'admin',icon:'👑',label:'Admin Panel'},
-    {id:'analytics',icon:'📊',label:'Analytics'},
-    {id:'plans',icon:'💎',label:'Plans'},
-  ] : [
-    {id:'dashboard',icon:'🏠',label:'Dashboard'},
-    {id:'record',icon:'🎬',label:'Record Video'},
-    {id:'videos',icon:'📁',label:'My Videos'},
-    {id:'analytics',icon:'📊',label:'Analytics'},
-    {id:'settings',icon:'⚙️',label:'Settings'},
-    {id:'plans',icon:'💎',label:'Upgrade'},
-  ];
-
-  const titles={dashboard:'Dashboard',record:'Record Video',videos:'My Videos',analytics:'Analytics',settings:'Settings',plans:'Plans & Pricing',admin:'Admin Panel'};
-  const planCfg=PLANS_CONFIG.find(p=>p.id===user.plan)||PLANS_CONFIG[0];
-
-  return (
-    <div className="app">
+  return(
+    <div className="app-shell">
+      {/* SIDEBAR */}
       <div className="sidebar">
-        <div className="sidebar-logo">
-          <div className="logo-badge">📦</div>
-          <div><div className="logo-name">Zeespares</div><div className="logo-tag">VMS</div></div>
+        <div className="sb-brand">
+          <div className="sb-brand-icon">Z</div>
+          <div><div className="sb-brand-text">OpenVMS</div><div className="sb-brand-sub">VMS</div></div>
         </div>
-        <div className="sidebar-nav">
-          <div className="nav-section">
-            <div className="nav-section-title">Navigation</div>
-            {navItems.map(n=>(
-              <div key={n.id} className={`nav-item${page===n.id?' active':''}`} onClick={()=>setPage(n.id)}>
-                <span className="nav-icon">{n.icon}</span><span>{n.label}</span>
-                {n.id==='plans'&&user.plan==='trial'&&<span className="badge badge-amber" style={{fontSize:10,padding:'2px 6px',marginLeft:'auto'}}>Trial</span>}
-              </div>
-            ))}
+
+        <div className="sb-nav">
+          {/* Dashboard */}
+          <div className={`sb-item${page==='dashboard'?' active':''}`} onClick={()=>setPage('dashboard')}>
+            <span className="sb-item-icon">📊</span> Dashboard
           </div>
-          {driveToken&&<div style={{margin:'8px 10px 0',padding:'10px 12px',background:'rgba(30,144,255,0.1)',borderRadius:9,border:'1px solid rgba(30,144,255,0.3)'}}>
-            <div style={{fontSize:11,fontWeight:700,color:'var(--blue)',marginBottom:2}}>📂 Drive Connected</div>
-            <div style={{fontSize:10,color:'var(--text3)',whiteSpace:'nowrap',overflow:'hidden',textOverflow:'ellipsis'}}>{driveEmail}</div>
+
+          {/* Scans section */}
+          <div className="sb-item" onClick={()=>setSideOpen(s=>({...s,scans:!s.scans}))}>
+            <span className="sb-item-icon">📷</span> Scans
+            <span style={{marginLeft:'auto',fontSize:10,color:'rgba(255,255,255,.3)'}}>{sideOpen.scans?'▾':'▸'}</span>
+          </div>
+          {sideOpen.scans&&<div className="sb-sub">
+            <div className={`sb-item${page==='scans'?' active':''}`} onClick={()=>setPage('scans')}>
+              <span className="sb-item-icon">🎬</span> VMS
+            </div>
           </div>}
-        </div>
-        <div className="sidebar-bottom">
-          <div className="user-pill" onClick={()=>setPage('settings')}>
-            <div className="user-avatar">{user.name[0].toUpperCase()}</div>
-            <div><div className="user-name">{user.name.split(' ')[0]}</div><div className="user-plan">{planCfg.name.toUpperCase()}</div></div>
+
+          {/* Operator */}
+          {!isAdmin&&<><div className="sb-item" onClick={()=>setSideOpen(s=>({...s,operator:!s.operator}))}>
+            <span className="sb-item-icon">👤</span> Operator
+            <span style={{marginLeft:'auto',fontSize:10,color:'rgba(255,255,255,.3)'}}>{sideOpen.operator?'▾':'▸'}</span>
           </div>
-          <button className="btn btn-ghost" style={{width:'100%',marginTop:8,fontSize:12,color:'var(--text3)'}} onClick={handleLogout}>Sign Out</button>
+          {sideOpen.operator&&<div className="sb-sub">
+            <div className={`sb-item${page==='videos'?' active':''}`} onClick={()=>setPage('videos')}>
+              <span className="sb-item-icon">📁</span> My Videos
+            </div>
+          </div>}</>}
+
+          <div className="sb-divider"/>
+
+          <div className={`sb-item${page==='analytics'?' active':''}`} onClick={()=>setPage('analytics')}>
+            <span className="sb-item-icon">📈</span> Analytics
+          </div>
+          <div className={`sb-item${page==='settings'?' active':''}`} onClick={()=>setPage('settings')}>
+            <span className="sb-item-icon">⚙</span> Settings
+          </div>
+          {isAdmin&&<div className={`sb-item${page==='admin'?' active':''}`} onClick={()=>setPage('admin')}>
+            <span className="sb-item-icon">👑</span> Admin
+          </div>}
+          <div className={`sb-item${page==='plans'?' active':''}`} onClick={()=>setPage('plans')} style={{color:user.plan==='trial'?'#fbbf24':'rgba(255,255,255,.6)'}}>
+            <span className="sb-item-icon">💎</span> Upgrade
+            {user.plan==='trial'&&<span style={{marginLeft:'auto',background:'#f59e0b',color:'#fff',fontSize:9,padding:'2px 6px',borderRadius:10,fontWeight:700}}>TRIAL</span>}
+          </div>
+
+          {driveToken&&<>
+            <div className="sb-divider"/>
+            <div style={{padding:'8px 16px'}}>
+              <div style={{fontSize:10,fontWeight:700,color:'rgba(255,255,255,.3)',letterSpacing:1,textTransform:'uppercase',marginBottom:4}}>Google Drive</div>
+              <div style={{fontSize:11,color:'#60a5fa',display:'flex',alignItems:'center',gap:5}}>
+                <span className="dot dot-success"></span> {driveEmail||'Connected'}
+              </div>
+            </div>
+          </>}
+        </div>
+
+        <div className="sb-footer">
+          <div className="sb-user" onClick={()=>setPage('settings')}>
+            <div className="sb-avatar">{user.name[0].toUpperCase()}</div>
+            <div><div className="sb-uname">{user.name.split(' ')[0]}</div><div className="sb-uplan">{plan.name}</div></div>
+          </div>
+          <button className="sb-logout" onClick={()=>{DB.clearSession();setUser(null);}}>Logout</button>
         </div>
       </div>
 
-      <div className="main">
+      {/* MAIN */}
+      <div className="main-area">
         <div className="topbar">
-          <div>
-            <div className="topbar-title">{titles[page]}</div>
-            <div style={{fontSize:12,color:'var(--text3)',marginTop:2}}>{new Date().toLocaleDateString('en-IN',{weekday:'long',year:'numeric',month:'long',day:'numeric'})}</div>
+          <div className="topbar-left">
+            <span className="topbar-breadcrumb" style={{color:'#6b7280'}}>OpenVMS</span>
+            <span className="topbar-sep">/</span>
+            <span className="topbar-title">{titles[page]||page}</span>
           </div>
-          <div className="topbar-actions">
-            {driveToken&&<span className="badge badge-blue">📂 Drive</span>}
-            <span className={`badge ${user.plan==='business'?'badge-amber':user.plan==='pro'?'badge-green':'badge-blue'}`}>{planCfg.name.toUpperCase()}</span>
-            {isAdmin&&<span className="badge badge-red">ADMIN</span>}
+          <div className="topbar-right">
+            {driveToken&&<span className="chip chip-blue"><span className="dot dot-blue"></span>Drive</span>}
+            <span className={`chip ${user.plan==='business'?'chip-warning':user.plan==='pro'?'chip-blue':'chip-gray'}`}>{plan.name}</span>
+            {isAdmin&&<span className="chip chip-danger">ADMIN</span>}
+            <div style={{width:30,height:30,borderRadius:'50%',background:'#2874f0',display:'flex',alignItems:'center',justifyContent:'center',color:'#fff',fontWeight:700,fontSize:13,cursor:'pointer'}} onClick={()=>setPage('settings')}>
+              {user.name[0].toUpperCase()}
+            </div>
           </div>
         </div>
-        <div className="content">
-          {page==='dashboard' && <Dashboard user={user} navigate={setPage}/>}
-          {page==='record'    && <RecordingPage user={user} toast={toast} driveToken={driveToken} driveEmail={driveEmail} onVideoSaved={handleVideoSaved}/>}
-          {page==='videos'    && <VideosPage user={user} toast={toast}/>}
+
+        <div className="content-area">
+          <div className="page-header">
+            <div>
+              <div className="page-title">{titles[page]||page}</div>
+              <div className="page-sub">{new Date().toLocaleDateString('en-IN',{weekday:'long',year:'numeric',month:'long',day:'numeric'})}</div>
+            </div>
+            {page==='scans'&&<button className="btn btn-primary" onClick={()=>setPage('scans')}>+ New Recording</button>}
+            {page==='videos'&&<button className="btn btn-outline" onClick={()=>showToast('Export coming soon','info')}>Export CSV</button>}
+          </div>
+
+          {page==='dashboard' && <DashboardPage user={user} navigate={setPage}/>}
+          {page==='scans'     && <RecordPage user={user} toast={showToast} driveToken={driveToken} driveEmail={driveEmail} onVideoSaved={handleVideoSaved}/>}
+          {page==='videos'    && <VideosPage user={user} toast={showToast}/>}
           {page==='analytics' && <AnalyticsPage user={user}/>}
-          {page==='settings'  && <SettingsPage user={user} toast={toast} driveToken={driveToken} driveEmail={driveEmail} onDriveConnect={connectDrive} onDriveDisconnect={disconnectDrive}/>}
-          {page==='plans'     && <PlansPage user={user} toast={toast} onUpgrade={handleUpgrade}/>}
-          {page==='admin'     && <AdminPage toast={toast}/>}
+          {page==='settings'  && <SettingsPage user={user} toast={showToast} driveToken={driveToken} driveEmail={driveEmail} onDriveConnect={connectDrive} onDriveDisconnect={disconnectDrive}/>}
+          {page==='plans'     && <PlansPage user={user} toast={showToast} onUpgrade={handleUpgrade}/>}
+          {page==='admin'     && <AdminPage/>}
         </div>
       </div>
-      {toastData&&<Toast key={toastData.key} msg={toastData.msg} type={toastData.type} onClose={()=>setToastData(null)}/>}
+
+      {toast&&<Toast key={toast.key} msg={toast.msg} type={toast.type} onClose={()=>setToast(null)}/>}
     </div>
   );
 }
 
-ReactDOM.render(<App/>, document.getElementById('root'));
+ReactDOM.render(<App/>,document.getElementById('root'));
 </script>
 </body>
 </html>
