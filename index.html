@@ -7,6 +7,7 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/react/18.2.0/umd/react.production.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.2.0/umd/react-dom.production.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/babel-standalone/7.23.5/babel.min.js"></script>
+<script src="https://unpkg.com/@ffmpeg/ffmpeg@0.11.6/dist/ffmpeg.min.js"></script>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
 <style>
 /* ── Reset ── */
@@ -309,20 +310,39 @@ input:checked+.toggle-slider::before{transform:translateX(18px);}
 const {useState,useEffect,useRef,useCallback}=React;
 
 // ── Config ────────────────────────────────────────────────────────
+const API_URL         = 'https://openvms-backend-production.up.railway.app';
 const RAZORPAY_KEY    = 'rzp_live_SVpyhNZtOJBGLG';
 const GOOGLE_CLIENT_ID= '801291352828-vsbfrr91qr8pqo03b24slag2tchdf29k.apps.googleusercontent.com';
 const GOOGLE_SCOPES   = 'https://www.googleapis.com/auth/drive.file https://www.googleapis.com/auth/userinfo.email';
 const ADMIN_EMAIL     = 'dskart9953@gmail.com';
 
-// ── LocalStorage DB ───────────────────────────────────────────────
+// ── Session helpers (token only in localStorage) ──────────────────
 const DB={
-  getUsers:()=>JSON.parse(localStorage.getItem('vms_users')||'{}'),
-  saveUsers:u=>localStorage.setItem('vms_users',JSON.stringify(u)),
   getSession:()=>JSON.parse(localStorage.getItem('vms_session')||'null'),
   saveSession:s=>localStorage.setItem('vms_session',JSON.stringify(s)),
   clearSession:()=>localStorage.removeItem('vms_session'),
+  getToken:()=>localStorage.getItem('vms_token')||'',
+  saveToken:t=>localStorage.setItem('vms_token',t),
+  clearToken:()=>localStorage.removeItem('vms_token'),
+  // Local video cache for offline display
   getVideos:e=>JSON.parse(localStorage.getItem(`vms_v_${e}`)||'[]'),
   saveVideos:(e,v)=>localStorage.setItem(`vms_v_${e}`,JSON.stringify(v)),
+};
+
+// ── API helper ────────────────────────────────────────────────────
+const api = async (path, options={}) => {
+  const token = DB.getToken();
+  const res = await fetch(`${API_URL}${path}`, {
+    headers: {
+      'Content-Type': 'application/json',
+      ...(token ? { Authorization: `Bearer ${token}` } : {})
+    },
+    ...options,
+    body: options.body ? JSON.stringify(options.body) : undefined
+  });
+  const data = await res.json();
+  if (!res.ok) throw new Error(data.error || 'Request failed');
+  return data;
 };
 
 // ── Plans ─────────────────────────────────────────────────────────
@@ -364,24 +384,29 @@ function AuthPage({onLogin}){
     return null;
   };
 
-  const handle=()=>{
+  const handle=async()=>{
     const e=validate(); if(e){setErr(e);return;}
     setLoading(true); setErr('');
-    const users=DB.getUsers();
-    if(mode==='signup'){
-      if(users[form.email.toLowerCase()]){setErr('Email already registered. Please sign in.');setLoading(false);return;}
-      const now=Date.now();
-      const u={name:form.name.trim(),email:form.email.toLowerCase(),password:btoa(form.password),
-        role:form.email.toLowerCase()===ADMIN_EMAIL?'admin':'seller',
-        plan:form.email.toLowerCase()===ADMIN_EMAIL.toLowerCase()?'business':'trial',trialStarted:now,trialExpiry:now+(7*86400000),createdAt:now,videoCount:0};
-      users[u.email]=u; DB.saveUsers(users); DB.saveSession(u);
-      setTimeout(()=>{setLoading(false);onLogin(u);},500);
-    } else {
-      const u=users[form.email.toLowerCase()];
-      if(!u){setErr('No account found. Please sign up first.');setLoading(false);return;}
-      if(u.password!==btoa(form.password)){setErr('Incorrect password.');setLoading(false);return;}
-      DB.saveSession(u);
-      setTimeout(()=>{setLoading(false);onLogin(u);},400);
+    try {
+      const endpoint = mode==='signup' ? '/api/auth/signup' : '/api/auth/login';
+      const body = mode==='signup'
+        ? {name:form.name.trim(), email:form.email.toLowerCase(), password:form.password}
+        : {email:form.email.toLowerCase(), password:form.password};
+      const res  = await fetch(`${API_URL}${endpoint}`, {
+        method:'POST',
+        headers:{'Content-Type':'application/json'},
+        body: JSON.stringify(body)
+      });
+      const data = await res.json();
+      if(!res.ok) { setErr(data.error||'Something went wrong'); setLoading(false); return; }
+      // Save token + user to localStorage
+      localStorage.setItem('vms_token', data.token);
+      localStorage.setItem('vms_session', JSON.stringify(data.user));
+      setLoading(false);
+      onLogin(data.user);
+    } catch(err) {
+      setErr('Cannot connect to server. Please try again.');
+      setLoading(false);
     }
   };
 
@@ -499,19 +524,47 @@ function RecordPage({user,toast,driveToken,driveEmail,onVideoSaved}){
     setTimeout(()=>awbRef.current&&awbRef.current.focus(),300);
   };
 
+  // Convert WebM to MP4 using FFmpeg.wasm
+  const convertToMp4=async(webmBlob)=>{
+    const {createFFmpeg,fetchFile}=FFmpeg;
+    const ffmpeg=createFFmpeg({log:false});
+    await ffmpeg.load();
+    const inputData=await fetchFile(webmBlob);
+    ffmpeg.FS('writeFile','input.webm',inputData);
+    await ffmpeg.run('-i','input.webm','-c:v','libx264','-c:a','aac','-strict','experimental','-b:v','800k','-b:a','64k','output.mp4');
+    const data=ffmpeg.FS('readFile','output.mp4');
+    ffmpeg.FS('unlink','input.webm');
+    ffmpeg.FS('unlink','output.mp4');
+    return new Blob([data.buffer],{type:'video/mp4'});
+  };
+
   const stopAndSave=(awbVal)=>{
     const oid=orderId, dur=fmt(timer);
     setPhase('saving');
     const rec=recRef.current;
     if(!rec||rec.state==='inactive'){finalise(null,oid,awbVal,dur);return;}
-    rec.onstop=async()=>{const blob=new Blob(chunksRef.current,{type:'video/webm'});await finalise(blob,oid,awbVal,dur);};
+    rec.onstop=async()=>{
+        const rawBlob=new Blob(chunksRef.current,{type:'video/webm'});
+        toast('Converting to MP4...','info');
+        setConverting(true);
+        try{
+          const mp4Blob=await convertToMp4(rawBlob);
+          setConverting(false);
+          await finalise(mp4Blob,oid,awbVal,dur);
+        }catch(e){
+          setConverting(false);
+          toast('MP4 convert failed, saving as WebM','error');
+          const fname2=`${oid}__${awbVal}__${new Date().toISOString().replace(/[:.]/-g,'-')}.webm`;
+          await finalise(rawBlob,oid,awbVal,dur);
+        }
+      };
     rec.stop();
     if(streamRef.current){streamRef.current.getTracks().forEach(t=>t.stop());streamRef.current=null;}
   };
 
   const finalise=async(blob,oid,awbVal,dur)=>{
     const ts=new Date().toISOString().replace(/[:.]/g,'-');
-    const fname=`${oid}__${awbVal}__${ts}.webm`;
+    const fname=`${oid}__${awbVal}__${ts}.mp4`;
     let storage='none';
     if(blob){
       if(driveToken){try{await uploadDrive(blob,fname,driveToken);storage='drive';setLastSaved(fname);toast(`Uploaded to Google Drive: ${fname}`,'success');}
@@ -1330,7 +1383,7 @@ function App(){
             <div className="sb-avatar">{user.name[0].toUpperCase()}</div>
             <div><div className="sb-uname">{user.name.split(' ')[0]}</div><div className="sb-uplan">{plan.name}</div></div>
           </div>
-          <button className="sb-logout" onClick={()=>{DB.clearSession();setUser(null);}}>Logout</button>
+          <button className="sb-logout" onClick={()=>{localStorage.removeItem('vms_token');localStorage.removeItem('vms_session');setUser(null);}}>Logout</button>
         </div>
       </div>
 
