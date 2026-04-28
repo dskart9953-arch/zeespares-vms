@@ -576,6 +576,16 @@ function RecordPage({user,toast,driveToken,driveEmail,onVideoSaved}){
     const all=[vid,...DB.getVideos(user.email)];
     DB.saveVideos(user.email,all);
     setRecentVideos(all.slice(0,8));
+    try{
+  const token=localStorage.getItem('vms_token');
+  if(token){
+    await fetch(`${API_URL}/api/videos`,{
+      method:'POST',
+      headers:{'Content-Type':'application/json','Authorization':`Bearer ${token}`},
+      body:JSON.stringify({orderId:oid,awb:awbVal,duration:dur,size:sizeMB,storage:storage,filename:fname,date:new Date().toISOString().split('T')[0]})
+    });
+  }
+}catch(e){console.log('Backend save failed');}
     onVideoSaved(vid);
     setOrderId('');setAwb('');setTimer(0);setPhase('idle');
     chunksRef.current=[];recRef.current=null;
