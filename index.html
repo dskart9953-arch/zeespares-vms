@@ -7,7 +7,6 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/react/18.2.0/umd/react.production.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.2.0/umd/react-dom.production.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/babel-standalone/7.23.5/babel.min.js"></script>
-<script src="https://unpkg.com/@ffmpeg/ffmpeg@0.11.6/dist/ffmpeg.min.js"></script>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
 <style>
 /* ── Reset ── */
@@ -545,18 +544,7 @@ function RecordPage({user,toast,driveToken,driveEmail,onVideoSaved}){
     if(!rec||rec.state==='inactive'){finalise(null,oid,awbVal,dur);return;}
     rec.onstop=async()=>{
         const rawBlob=new Blob(chunksRef.current,{type:'video/webm'});
-        toast('Converting to MP4...','info');
-        setConverting(true);
-        try{
-          const mp4Blob=await convertToMp4(rawBlob);
-          setConverting(false);
-          await finalise(mp4Blob,oid,awbVal,dur);
-        }catch(e){
-          setConverting(false);
-          toast('MP4 convert failed, saving as WebM','error');
-          const fname2=`${oid}__${awbVal}__${new Date().toISOString().replace(/[:.]/-g,'-')}.webm`;
-          await finalise(rawBlob,oid,awbVal,dur);
-        }
+        await finalise(rawBlob,oid,awbVal,dur);
       };
     rec.stop();
     if(streamRef.current){streamRef.current.getTracks().forEach(t=>t.stop());streamRef.current=null;}
