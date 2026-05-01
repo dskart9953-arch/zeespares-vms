@@ -565,27 +565,27 @@ function RecordPage({user,toast,driveToken,driveEmail,onVideoSaved}){
   const finalise=async(blob,oid,awbVal,dur)=>{
     const ts=new Date().toISOString().replace(/[:.]/g,'-');
     const fname=`${oid}__${awbVal}__${ts}.mp4`;
-    let storage='none';
+    let storage='none', driveUrl='', driveFileId='';
     if(blob){
-      if(driveToken){try{await uploadDrive(blob,fname,driveToken);storage='drive';setLastSaved(fname);toast(`Uploaded to Google Drive: ${fname}`,'success');}
-        catch(e){toast('Drive upload failed, saving locally','error');storage=await saveLocal(blob,fname);}}
-      else storage=await saveLocal(blob,fname);
+      if(driveToken){
+        try{
+          const dr=await uploadDrive(blob,fname,driveToken);
+          storage='drive'; driveUrl=dr.shareUrl||''; driveFileId=dr.id||'';
+          setLastSaved(fname); toast(`Uploaded to Google Drive!`,'success');
+        }catch(e){toast('Drive upload failed, saving locally','error');storage=await saveLocal(blob,fname);}
+      } else storage=await saveLocal(blob,fname);
     }
     const sizeMB=blob?`${(blob.size/1048576).toFixed(1)}MB`:'—';
-    const vid={id:Date.now(),orderId:oid,awb:awbVal,date:new Date().toISOString().split('T')[0],duration:dur,size:sizeMB,status:'saved',storage,filename:fname};
+    const today=new Date().toISOString().split('T')[0];
+    const vid={id:Date.now(),orderId:oid,awb:awbVal,date:today,duration:dur,size:sizeMB,status:'saved',storage,filename:fname,driveUrl,driveFileId};
     const all=[vid,...DB.getVideos(user.email)];
     DB.saveVideos(user.email,all);
     setRecentVideos(all.slice(0,8));
+    // Save to backend
     try{
-  const token=localStorage.getItem('vms_token');
-  if(token){
-    await fetch(`${API_URL}/api/videos`,{
-      method:'POST',
-      headers:{'Content-Type':'application/json','Authorization':`Bearer ${token}`},
-      body:JSON.stringify({orderId:oid,awb:awbVal,duration:dur,size:sizeMB,storage:storage,filename:fname,date:new Date().toISOString().split('T')[0]})
-    });
-  }
-}catch(e){console.log('Backend save failed');}
+      const tok=localStorage.getItem('vms_token');
+      if(tok){await fetch(`${API_URL}/api/videos`,{method:'POST',headers:{'Content-Type':'application/json','Authorization':`Bearer ${tok}`},body:JSON.stringify({orderId:oid,awb:awbVal,duration:dur,size:sizeMB,storage,filename:fname,date:today,driveUrl,driveFileId})});}
+    }catch(e){console.log('Backend save failed');}
     onVideoSaved(vid);
     setOrderId('');setAwb('');setTimer(0);setPhase('idle');
     chunksRef.current=[];recRef.current=null;
@@ -614,7 +614,15 @@ function RecordPage({user,toast,driveToken,driveEmail,onVideoSaved}){
     form.append('file',blob,fname);
     const up=await fetch('https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart',{method:'POST',headers:{Authorization:`Bearer ${token}`},body:form});
     if(!up.ok) throw new Error('Upload failed');
-    return up.json();
+    const upData=await up.json();
+    // Make file publicly viewable
+    await fetch(`https://www.googleapis.com/drive/v3/files/${upData.id}/permissions`,{
+      method:'POST',headers:{Authorization:`Bearer ${token}`,'Content-Type':'application/json'},
+      body:JSON.stringify({role:'reader',type:'anyone'})
+    });
+    upData.shareUrl=`https://drive.google.com/file/d/${upData.id}/view`;
+    upData.previewUrl=`https://drive.google.com/file/d/${upData.id}/preview`;
+    return upData;
   };
 
   const onOK=e=>{if(e.key==='Enter'&&orderId.trim().length>=3&&phase==='idle'){e.preventDefault();startRec(orderId.trim());}};
@@ -787,6 +795,48 @@ function RecordPage({user,toast,driveToken,driveEmail,onVideoSaved}){
   );
 }
 
+
+// ── Video Preview Modal ─────────────────────────────────────────
+function VideoPreviewModal({video, onClose}){
+  if(!video) return null;
+  return(
+    <div className="modal-backdrop" onClick={onClose}>
+      <div style={{background:'#1a1a2e',borderRadius:12,padding:24,width:'90%',maxWidth:800,boxShadow:'0 20px 60px rgba(0,0,0,0.5)'}} onClick={e=>e.stopPropagation()}>
+        <div style={{display:'flex',justifyContent:'space-between',alignItems:'center',marginBottom:16}}>
+          <div>
+            <div style={{fontWeight:700,fontSize:16,color:'#fff'}}>{video.orderId}</div>
+            <div style={{fontSize:12,color:'#9ca3af'}}>AWB: {video.awb} · {video.date} · {video.duration}</div>
+          </div>
+          <button onClick={onClose} style={{background:'rgba(255,255,255,0.1)',border:'none',color:'#fff',width:32,height:32,borderRadius:8,cursor:'pointer',fontSize:18}}>×</button>
+        </div>
+        {video.driveUrl ? (
+          <div>
+            <iframe src={`https://drive.google.com/file/d/${video.driveFileId}/preview`}
+              style={{width:'100%',height:400,border:'none',borderRadius:8,background:'#000'}}
+              allow="autoplay" />
+            <div style={{display:'flex',gap:8,marginTop:14,flexWrap:'wrap'}}>
+              <button className="btn btn-primary" onClick={()=>window.open(video.driveUrl,'_blank')}>🔗 Open in Drive</button>
+              <button className="btn btn-outline" style={{color:'#fff',borderColor:'rgba(255,255,255,0.3)'}} onClick={()=>{navigator.clipboard.writeText(video.driveUrl);}}>📋 Copy URL</button>
+              <button className="btn btn-outline" style={{color:'#25d366',borderColor:'#25d366'}} onClick={()=>window.open(`https://wa.me/?text=${encodeURIComponent('Packing video proof for Order '+video.orderId+': '+video.driveUrl)}`)}>📱 Share on WhatsApp</button>
+              <button className="btn btn-outline" style={{color:'#1877f2',borderColor:'#1877f2'}} onClick={()=>window.open(`mailto:?subject=Packing Video Proof&body=Order ID: ${video.orderId}%0AVideo: ${video.driveUrl}`)}>📧 Share via Email</button>
+            </div>
+            <div style={{marginTop:12,padding:'10px 14px',background:'rgba(40,116,240,0.1)',borderRadius:8,border:'1px solid rgba(40,116,240,0.3)'}}>
+              <div style={{fontSize:11,color:'#9ca3af',marginBottom:4}}>Shareable URL:</div>
+              <div style={{fontSize:12,color:'#60a5fa',wordBreak:'break-all',fontFamily:'monospace'}}>{video.driveUrl}</div>
+            </div>
+          </div>
+        ) : (
+          <div style={{textAlign:'center',padding:'40px 20px',color:'#9ca3af'}}>
+            <div style={{fontSize:40,marginBottom:10}}>💾</div>
+            <div style={{fontSize:14,marginBottom:8}}>This video is saved locally</div>
+            <div style={{fontSize:12}}>Connect Google Drive to get a shareable URL</div>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
 // ── Dashboard ─────────────────────────────────────────────────────
 function DashboardPage({user,navigate}){
   const videos=DB.getVideos(user.email);
@@ -862,7 +912,11 @@ function DashboardPage({user,navigate}){
                 <td>{v.duration}</td>
                 <td>{v.size}</td>
                 <td><span className={`chip ${v.storage==='drive'?'chip-blue':v.storage==='local'?'chip-success':'chip-gray'}`}>{v.storage}</span></td>
-                <td><button className="btn btn-preview">⊞ Preview</button></td>
+                <td>
+                <div style={{display:'flex',gap:4}}>
+                  {v.driveUrl?<><button className="btn btn-preview" onClick={()=>setPreviewVideo(v)}>▶ Preview</button><button className="btn btn-outline btn-sm" style={{fontSize:11,borderColor:'#2874f0',color:'#2874f0'}} onClick={()=>{navigator.clipboard.writeText(v.driveUrl);toast('URL copied!','success');}}>📋 Copy URL</button></>:<button className="btn btn-preview" style={{opacity:0.5}} onClick={()=>setPreviewVideo(v)}>💾 Local</button>}
+                </div>
+              </td>
               </tr>
             ))}</tbody></table>
             <div className="pagination">
@@ -886,6 +940,7 @@ function VideosPage({user,toast}){
   const [dateF,setDateF]=useState('');
   const [storageF,setStorageF]=useState('');
   const [delModal,setDelModal]=useState(null);
+  const [previewVideo,setPreviewVideo]=useState(null);
   const [videos,setVideos]=useState(()=>DB.getVideos(user.email));
   const [page,setPage]=useState(1);
   const PER_PAGE=10;
@@ -947,8 +1002,17 @@ function VideosPage({user,toast}){
                   <td>{v.size}</td>
                   <td><span className={`chip ${v.storage==='drive'?'chip-blue':v.storage==='local'?'chip-success':'chip-gray'}`}>{v.storage}</span></td>
                   <td>
-                    <div style={{display:'flex',gap:6}}>
-                      <button className="btn btn-preview">⊞ Preview</button>
+                    <div style={{display:'flex',gap:6,flexWrap:'wrap'}}>
+                      {v.driveUrl && (
+                        <>
+                          <button className="btn btn-preview" onClick={()=>window.open(v.driveUrl,'_blank')}>▶ Preview</button>
+                          <button className="btn btn-outline btn-sm" style={{borderColor:'#2874f0',color:'#2874f0'}} onClick={()=>{navigator.clipboard.writeText(v.driveUrl);toast('Drive URL copied!','success');}}>📋 Copy URL</button>
+                          <button className="btn btn-outline btn-sm" style={{borderColor:'#25d366',color:'#25d366'}} onClick={()=>window.open(`https://wa.me/?text=${encodeURIComponent('Packing video proof: '+v.driveUrl)}`)}>WhatsApp</button>
+                        </>
+                      )}
+                      {!v.driveUrl && v.storage==='local' && (
+                        <span style={{fontSize:11,color:'#6b7280',padding:'4px 8px'}}>Local only — connect Drive for URL</span>
+                      )}
                       <button className="btn btn-danger btn-sm" onClick={()=>setDelModal(v.id)}>Delete</button>
                     </div>
                   </td>
@@ -980,6 +1044,7 @@ function VideosPage({user,toast}){
           </div>
         </div>
       </div>}
+      {previewVideo&&<VideoPreviewModal video={previewVideo} onClose={()=>setPreviewVideo(null)}/>}
     </div>
   );
 }
